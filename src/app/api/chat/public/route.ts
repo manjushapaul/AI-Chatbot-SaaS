@@ -72,10 +72,19 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Create new conversation with better session management
-      const sessionId = `public_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Create a new conversation for public chat
+      // Note: We need a userId for the conversation, so we'll use a placeholder or create an anonymous user
+      // For now, we'll use the bot's tenant's first user or create a system user
+      const tenantUsers = await prisma.user.findMany({
+        where: { tenantId: bot.tenantId },
+        take: 1
+      });
+      
+      const userId = tenantUsers[0]?.id || bot.tenantId; // Fallback to tenantId if no users exist
+      
       conversation = await prisma.conversation.create({
         data: {
-          sessionId,
+          userId,
           botId,
           tenantId: bot.tenantId,
           status: 'ACTIVE'
