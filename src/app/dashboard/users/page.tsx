@@ -615,7 +615,7 @@ export default function UsersPage() {
                   <label className={`${typography.label} block mb-1`}>Role *</label>
                   <select
                     value={inviteData.role}
-                    onChange={(e) => setInviteData({ ...inviteData, role: e.target.value as any })}
+                    onChange={(e) => setInviteData({ ...inviteData, role: e.target.value as 'TENANT_ADMIN' | 'USER' | 'BOT_OPERATOR' })}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-soft/40 focus:border-accent-soft bg-white/80 text-gray-900 text-sm"
                   >
                     <option value="USER">User</option>
@@ -668,7 +668,7 @@ export default function UsersPage() {
                   <label className={`${typography.label} block mb-1`}>Role *</label>
                   <select
                     value={editData.role}
-                    onChange={(e) => setEditData({ ...editData, role: e.target.value as any })}
+                    onChange={(e) => setEditData({ ...editData, role: e.target.value as 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'USER' | 'BOT_OPERATOR' })}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-soft/40 focus:border-accent-soft bg-white/80 text-gray-900 text-sm"
                   >
                     <option value="USER">User</option>

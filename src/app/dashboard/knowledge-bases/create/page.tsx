@@ -183,7 +183,7 @@ export default function CreateKnowledgeBasePage() {
               <div className="text-sm text-white">
                 <h4 className="font-medium mb-1">What happens next?</h4>
                 <p className="text-white">
-                  After creating the knowledge base, you'll be able to:
+                  After creating the knowledge base, you&apos;ll be able to:
                 </p>
                 <ul className="list-disc list-inside mt-2 space-y-1 text-white">
                   <li>Upload documents (PDFs, Word docs, text files)</li>

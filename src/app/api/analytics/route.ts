@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
 
     // Bot performance data
     const botPerformance = await Promise.all(
-      (await prisma.bot.findMany({ where: { tenantId } })).map(async (bot: any) => {
+      (await prisma.bot.findMany({ where: { tenantId } })).map(async (bot: BotType) => {
         const botConversations = conversations.filter((c: ConversationWithMessages) => c.botId === bot.id);
         const botSatisfaction = satisfactionScore; // Placeholder
         const botResponseTime = avgResponseTime; // Placeholder

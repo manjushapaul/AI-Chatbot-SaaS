@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const botId = searchParams.get('botId');
     const status = searchParams.get('status') as 'ACTIVE' | 'CLOSED' | 'ARCHIVED' | null;
     
-    const filters: any = {};
+    const filters: { userId?: string; botId?: string; status?: 'ACTIVE' | 'CLOSED' | 'ARCHIVED' } = {};
     if (userId) filters.userId = userId;
     if (botId) filters.botId = botId;
     if (status) filters.status = status;
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const conversations = await db.getConversations(filters);
     
     // Transform the data to match the frontend interface
-    const transformedConversations = conversations.map((conv: any) => ({
+    const transformedConversations = conversations.map((conv: { id: string; userId: string | null; botId: string; bot?: { name: string } | null }) => ({
       id: conv.id,
       userId: conv.userId,
       botId: conv.botId,

@@ -639,7 +639,7 @@ export default function SettingsPage() {
                           ...preferencesForm,
                           privacy: {
                             ...preferencesForm.privacy,
-                            profileVisibility: e.target.value as any
+                            profileVisibility: e.target.value as 'public' | 'private' | 'team'
                           }
                         })}
                         className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm text-gray-800 focus:border-accent-soft focus:ring-2 focus:ring-accent-soft/40 focus:outline-none"

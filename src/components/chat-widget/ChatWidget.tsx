@@ -81,7 +81,7 @@ export default function ChatWidget({
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data.messages) {
-          const historyMessages: Message[] = data.data.messages.map((msg: any) => ({
+          const historyMessages: Message[] = data.data.messages.map((msg: { id: string; content: string; role: string; timestamp: string | Date }) => ({
             id: msg.id,
             content: msg.content,
             role: msg.role as 'user' | 'assistant',

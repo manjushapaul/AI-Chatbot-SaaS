@@ -14,7 +14,7 @@ interface CreateNotificationParams {
   category: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   actionUrl?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -119,7 +119,7 @@ export async function onTrainingFailed(
 export async function onDailySummaryReady(
   userId: string,
   tenantId: string,
-  summary: any
+  summary: Record<string, unknown>
 ) {
   // Stub - should be implemented in daily summary job
   console.log('onDailySummaryReady', { userId, tenantId, summary });

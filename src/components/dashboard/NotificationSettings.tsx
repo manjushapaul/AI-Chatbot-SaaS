@@ -103,7 +103,7 @@ export function NotificationSettings() {
     }
   };
 
-  const updatePreference = (category: string, field: string, value: any) => {
+  const updatePreference = (category: string, field: string, value: boolean | string) => {
     setPreferences((prev) =>
       prev.map((p) =>
         p.category === category ? { ...p, [field]: value } : p

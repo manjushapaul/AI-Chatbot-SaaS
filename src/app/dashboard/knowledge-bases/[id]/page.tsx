@@ -186,7 +186,7 @@ export default function KnowledgeBaseDetailPage() {
       <div className="max-w-6xl mx-auto px-6 pt-8 pb-12">
         <div className="text-center">
           <h1 className="text-xl font-semibold text-slate-900 mb-4">Knowledge Base Not Found</h1>
-          <p className="text-sm text-gray-500 mb-6">The knowledge base you're looking for doesn't exist.</p>
+          <p className="text-sm text-gray-500 mb-6">The knowledge base you&apos;re looking for doesn&apos;t exist.</p>
           <Link
             href="/dashboard/knowledge-bases"
             className="rounded-full bg-accent-soft px-5 py-2 text-sm font-medium text-white shadow hover:bg-accent-soft/80 transition-colors"

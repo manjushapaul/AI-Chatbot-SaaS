@@ -97,7 +97,7 @@ export default function EditWidgetPage() {
     }
   };
 
-  const updateConfig = (key: string, value: any) => {
+  const updateConfig = (key: string, value: string | number | boolean) => {
     if (!widget) return;
     setWidget({
       ...widget,
@@ -204,7 +204,7 @@ export default function EditWidgetPage() {
       <AppPage>
         <div className="text-center">
           <h1 className={typography.pageTitle}>Widget not found</h1>
-          <p className={`${typography.pageSubtitle} mt-2 mb-6`}>The widget you're looking for doesn't exist.</p>
+          <p className={`${typography.pageSubtitle} mt-2 mb-6`}>The widget you&apos;re looking for doesn&apos;t exist.</p>
           <button
             onClick={() => router.push('/dashboard/widgets')}
             className="rounded-full bg-accent-soft text-white px-5 py-2 text-sm font-medium shadow hover:bg-accent-soft/80 transition-colors"

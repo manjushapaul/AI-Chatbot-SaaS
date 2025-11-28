@@ -141,7 +141,7 @@ export function SignInForm({ tenant, onSwitchToSignUp }: SignInFormProps) {
       {onSwitchToSignUp && (
         <div className="text-center pt-2">
           <p className="text-xs text-gray-500">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <button
               onClick={onSwitchToSignUp}
               className="text-accent-soft font-medium hover:underline"

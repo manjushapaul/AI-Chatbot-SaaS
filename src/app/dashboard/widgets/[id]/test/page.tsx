@@ -247,7 +247,7 @@ export default function WidgetTestPage() {
                 Our chatbots are powered by advanced language models and can handle complex customer inquiries.
               </p>
               <p className="text-gray-600">
-                Test the widget by asking questions about our services, pricing, or any other topics you'd like to explore.
+                Test the widget by asking questions about our services, pricing, or any other topics you&apos;d like to explore.
               </p>
             </div>
             

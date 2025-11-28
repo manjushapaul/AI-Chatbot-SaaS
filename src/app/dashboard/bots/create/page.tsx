@@ -198,7 +198,7 @@ export default function CreateBotPage() {
       return;
     }
     
-    handleSubmit(e as any);
+    handleSubmit(e as React.FormEvent<HTMLFormElement>);
   };
 
   const nextStep = () => {

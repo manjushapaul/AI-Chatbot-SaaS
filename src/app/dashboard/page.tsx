@@ -58,7 +58,7 @@ export default function DashboardPage() {
         ]);
 
         // Calculate active conversations (status !== 'CLOSED')
-        const activeConversations = conversationsData.data?.filter((conv: any) => conv.status !== 'CLOSED').length || 0;
+        const activeConversations = conversationsData.data?.filter((conv: { status: string }) => conv.status !== 'CLOSED').length || 0;
 
         // Generate recent activity based on real data
         const recentActivity = [];

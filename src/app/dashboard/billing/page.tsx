@@ -454,7 +454,7 @@ export default function BillingPage() {
               </div>
               <div className="p-6 space-y-4">
                 <p className={typography.body}>
-                  Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period.
+                  Are you sure you want to cancel your subscription? You&apos;ll continue to have access until the end of your current billing period.
                 </p>
                 <textarea
                   placeholder="Reason for cancellation (optional)"

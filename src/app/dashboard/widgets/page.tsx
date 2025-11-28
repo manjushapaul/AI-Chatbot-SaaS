@@ -75,7 +75,7 @@ export default function WidgetsPage() {
       const response = await fetch('/api/widgets');
       if (response.ok) {
         const data = await response.json();
-        const widgetsWithEmbedCodes = data.data.map((widget: any) => ({
+        const widgetsWithEmbedCodes = data.data.map((widget: { id: string; bot?: { name?: string } | null; updatedAt?: string; createdAt?: string; [key: string]: unknown }) => ({
           ...widget,
           botName: widget.bot?.name || 'Unknown Bot',
           embedCode: typeof window !== 'undefined' ? `<script src="${window.location.origin}/chat.js" data-widget-id="${widget.id}"></script>` : '',
@@ -487,7 +487,7 @@ export default function WidgetsPage() {
                               color: '#ffffff'
                             }}
                           >
-                            Hi! I'm your AI assistant. How can I help you today?
+                            Hi! I&apos;m your AI assistant. How can I help you today?
                           </div>
                         </div>
                         <div className="flex justify-end">
@@ -632,7 +632,7 @@ export default function WidgetsPage() {
                       <span>HTML Embed (Recommended)</span>
                     </h4>
                     <p className={`${typography.body} mb-3`}>
-                      Add this code to your HTML page's &lt;head&gt; section or before the closing &lt;/body&gt; tag.
+                      Add this code to your HTML page&apos;s &lt;head&gt; section or before the closing &lt;/body&gt; tag.
                     </p>
                     <div className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
                       <code className={`text-sm text-gray-800 break-all ${typography.meta}`}>
@@ -717,7 +717,7 @@ export default ChatWidget;`;
                       <span>WordPress Integration</span>
                     </h4>
                     <p className={`${typography.body} mb-3`}>
-                      Add this code to your WordPress theme's functions.php or use a custom HTML widget.
+                      Add this code to your WordPress theme&apos;s functions.php or use a custom HTML widget.
                     </p>
                     <div className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
                       <code className={`text-sm text-gray-800 ${typography.meta}`}>
@@ -769,7 +769,7 @@ add_action('wp_enqueue_scripts', 'add_chat_widget');`;
                       <span>Shopify Integration</span>
                     </h4>
                     <p className={`${typography.body} mb-3`}>
-                      Add this code to your Shopify theme's layout/theme.liquid file.
+                      Add this code to your Shopify theme&apos;s layout/theme.liquid file.
                     </p>
                     <div className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
                       <code className={`text-sm text-gray-800 ${typography.meta}`}>

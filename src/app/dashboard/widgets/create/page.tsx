@@ -111,7 +111,7 @@ export default function CreateWidgetPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as any),
+          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
           [child]: value
         }
       }));
@@ -172,7 +172,7 @@ export default function CreateWidgetPage() {
                 color: '#FFFFFF'
               }}
             >
-              Hello! I'm here to help.
+              Hello! I&apos;m here to help.
             </div>
           </div>
         </div>

@@ -2,6 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripeService } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 
+// Stripe webhook event types
+interface StripeSubscription {
+  id: string;
+  metadata?: {
+    tenantId?: string;
+  };
+  customer?: string;
+  status?: string;
+  current_period_start?: number;
+  current_period_end?: number;
+  cancel_at_period_end?: boolean;
+  items?: {
+    data?: Array<{
+      price?: {
+        id?: string;
+      };
+    }>;
+  };
+}
+
+interface StripeInvoice {
+  id: string;
+  number?: string;
+  subscription?: string | {
+    metadata?: {
+      tenantId?: string;
+    };
+  };
+  customer?: string;
+  amount_paid?: number;
+  amount_due?: number;
+  currency?: string;
+  description?: string;
+  period_start?: number;
+  period_end?: number;
+  payment_intent?: string;
+  metadata?: {
+    tenantId?: string;
+  };
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
@@ -61,7 +102,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleSubscriptionCreated(subscription: any) {
+async function handleSubscriptionCreated(subscription: StripeSubscription) {
   try {
     const tenantId = subscription.metadata.tenantId;
     if (!tenantId) {
@@ -111,7 +152,7 @@ async function handleSubscriptionCreated(subscription: any) {
   }
 }
 
-async function handleSubscriptionUpdated(subscription: any) {
+async function handleSubscriptionUpdated(subscription: StripeSubscription) {
   try {
     const tenantId = subscription.metadata.tenantId;
     if (!tenantId) {
@@ -147,7 +188,7 @@ async function handleSubscriptionUpdated(subscription: any) {
   }
 }
 
-async function handleSubscriptionDeleted(subscription: any) {
+async function handleSubscriptionDeleted(subscription: StripeSubscription) {
   try {
     const tenantId = subscription.metadata.tenantId;
     if (!tenantId) {
@@ -177,7 +218,7 @@ async function handleSubscriptionDeleted(subscription: any) {
   }
 }
 
-async function handlePaymentSucceeded(invoice: any) {
+async function handlePaymentSucceeded(invoice: StripeInvoice) {
   try {
     const tenantId = invoice.subscription?.metadata?.tenantId;
     if (!tenantId) {
@@ -214,7 +255,7 @@ async function handlePaymentSucceeded(invoice: any) {
   }
 }
 
-async function handlePaymentFailed(invoice: any) {
+async function handlePaymentFailed(invoice: StripeInvoice) {
   try {
     const tenantId = invoice.subscription?.metadata?.tenantId;
     if (!tenantId) {
@@ -251,9 +292,9 @@ async function handlePaymentFailed(invoice: any) {
   }
 }
 
-async function handleTrialWillEnd(subscription: any) {
+async function handleTrialWillEnd(subscription: StripeSubscription) {
   try {
-    const tenantId = subscription.metadata.tenantId;
+    const tenantId = subscription.metadata?.tenantId;
     if (!tenantId) {
       console.error('No tenant ID in subscription metadata');
       return;
