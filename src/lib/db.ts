@@ -909,14 +909,14 @@ export class TenantDB {
         where: {
           userId_category: {
             userId,
-            category: pref.category as 'BOT_ACTIVITY' | 'SYSTEM' | 'PERFORMANCE' | 'BUSINESS_METRICS' | 'BILLING' | 'SECURITY' | 'KNOWLEDGE_BASE' | 'WIDGETS',
+            category: pref.category as 'bot_activity' | 'system' | 'metrics' | 'team' | 'billing',
           },
         },
         update: {
           inAppEnabled: pref.inAppEnabled,
           emailEnabled: pref.emailEnabled,
           smsEnabled: pref.smsEnabled,
-          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'DAILY' | 'WEEKLY' | 'NEVER',
+          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'HOURLY_DIGEST' | 'DAILY_DIGEST',
           quietHoursStart: pref.quietHoursStart,
           quietHoursEnd: pref.quietHoursEnd,
         },
@@ -926,7 +926,7 @@ export class TenantDB {
           inAppEnabled: pref.inAppEnabled ?? true,
           emailEnabled: pref.emailEnabled ?? false,
           smsEnabled: pref.smsEnabled ?? false,
-          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'DAILY' | 'WEEKLY' | 'NEVER',
+          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'HOURLY_DIGEST' | 'DAILY_DIGEST',
           quietHoursStart: pref.quietHoursStart,
           quietHoursEnd: pref.quietHoursEnd,
         },
@@ -979,7 +979,7 @@ export async function createTenant(data: {
   return prisma.tenant.create({
     data: {
       ...data,
-      plan: (data.plan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | undefined) || 'FREE',
+      plan: (data.plan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL' | undefined) || 'FREE',
     },
   });
 } 
