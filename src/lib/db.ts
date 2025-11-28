@@ -428,8 +428,8 @@ export class TenantDB {
         conversationId: data.conversationId,
         role: data.role,
         content: data.content,
-        tokens: data.tokens,
-        cost: data.cost,
+        tokens: data.tokens ?? 0,
+        cost: data.cost ?? 0.0,
         model: data.model,
         responseTime: data.responseTime,
         metadata: data.metadata,
@@ -437,20 +437,34 @@ export class TenantDB {
     });
 
     // Update conversation stats
+    const updateData: {
+      messageCount: { increment: number };
+      totalTokens?: { increment: number };
+      totalCost?: { increment: number };
+      lastMessageAt: Date;
+    } = {
+      messageCount: {
+        increment: 1,
+      },
+      lastMessageAt: new Date(),
+    };
+
+    // Only increment tokens and cost if they are defined and are numbers
+    if (typeof data.tokens === 'number' && !isNaN(data.tokens)) {
+      updateData.totalTokens = {
+        increment: data.tokens,
+      };
+    }
+
+    if (typeof data.cost === 'number' && !isNaN(data.cost)) {
+      updateData.totalCost = {
+        increment: data.cost,
+      };
+    }
+
     await prisma.conversation.update({
       where: { id: data.conversationId },
-      data: {
-        messageCount: {
-          increment: 1,
-        },
-        totalTokens: {
-          increment: data.tokens,
-        },
-        totalCost: {
-          increment: data.cost,
-        },
-        lastMessageAt: new Date(),
-      },
+      data: updateData,
     });
 
     return message;
