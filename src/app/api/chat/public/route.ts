@@ -90,15 +90,27 @@ export async function POST(request: NextRequest) {
         userId = tenantUser.id;
       } else {
         // Create a system user for public chats if no users exist
-        const systemUser = await prisma.user.create({
-          data: {
-            email: `system@${bot.tenantId}.public`,
-            name: 'Public Chat User',
-            tenantId: bot.tenantId,
-            role: 'USER'
+        try {
+          const systemUser = await prisma.user.create({
+            data: {
+              email: `system@${bot.tenantId}.public`,
+              name: 'Public Chat User',
+              tenantId: bot.tenantId,
+              role: 'USER'
+            }
+          });
+          userId = systemUser.id;
+        } catch (userError) {
+          console.error('Error creating system user:', userError);
+          // If user creation fails (e.g., unique constraint), try to find any user
+          const fallbackUser = await prisma.user.findFirst({
+            where: { tenantId: bot.tenantId }
+          });
+          if (!fallbackUser) {
+            throw new Error('Unable to create or find a user for public chat. Please ensure at least one user exists in the tenant.');
           }
-        });
-        userId = systemUser.id;
+          userId = fallbackUser.id;
+        }
       }
       
       const sessionId = `public_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
