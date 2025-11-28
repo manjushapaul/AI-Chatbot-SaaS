@@ -417,8 +417,8 @@ export class TenantDB {
     conversationId: string;
     role: 'USER' | 'ASSISTANT' | 'SYSTEM';
     content: string;
-    tokens: number;
-    cost: number;
+    tokens?: number;
+    cost?: number;
     model?: string;
     responseTime?: number;
     metadata?: Record<string, unknown>;
