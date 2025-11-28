@@ -34,7 +34,7 @@ export interface InvoiceDetails {
   paid: boolean;
   pdfUrl?: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentHistory {

@@ -140,7 +140,7 @@ export class VectorDB {
     knowledgeBaseId: string,
     tenantId: string,
     topK: number = 5,
-    filter?: Record<string, any>
+    filter?: Record<string, unknown>
   ): Promise<SearchResult[]> {
     try {
       const index = await this.initializeIndex();
@@ -225,7 +225,7 @@ export class VectorDB {
   /**
    * Get index statistics
    */
-  async getIndexStats(): Promise<any> {
+  async getIndexStats(): Promise<{ totalVectors?: number; indexName?: string; [key: string]: unknown }> {
     try {
       const index = await this.initializeIndex();
       return await index.describeIndexStats();

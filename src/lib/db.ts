@@ -922,7 +922,7 @@ export class TenantDB {
         },
         create: {
           userId,
-          category: pref.category as any,
+          category: pref.category as 'bot_activity' | 'system' | 'metrics' | 'team' | 'billing',
           inAppEnabled: pref.inAppEnabled ?? true,
           emailEnabled: pref.emailEnabled ?? false,
           smsEnabled: pref.smsEnabled ?? false,

@@ -1,7 +1,6 @@
 import * as mammoth from 'mammoth';
 
 // Import pdf-parse more safely to avoid hardcoded path issues
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 let pdf: { (data: Buffer): Promise<{ text: string; [key: string]: unknown }> } | null;
 try {
   // Try dynamic import first

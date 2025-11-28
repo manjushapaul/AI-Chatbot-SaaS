@@ -488,7 +488,7 @@ export class StripeService {
   /**
    * Get customer payment methods
    */
-  async getCustomerPaymentMethods(customerId: string): Promise<any[]> {
+  async getCustomerPaymentMethods(customerId: string): Promise<Array<{ id: string; type: string; [key: string]: unknown }>> {
     try {
       const paymentMethods = await stripe.paymentMethods.list({
         customer: customerId,
@@ -618,7 +618,7 @@ export class StripeService {
   /**
    * Get subscription usage records (placeholder for future implementation)
    */
-  async getSubscriptionUsage(subscriptionId: string): Promise<any> {
+  async getSubscriptionUsage(subscriptionId: string): Promise<{ usage?: number; [key: string]: unknown }> {
     // This will be implemented when metered billing is needed
     console.log('Usage records not yet implemented');
     return [];
