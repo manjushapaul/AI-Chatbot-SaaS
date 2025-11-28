@@ -115,7 +115,7 @@ export function getAuthRedirectUrl(role: string, tenantSubdomain: string): strin
   return `/${tenantSubdomain}/dashboard`;
 }
 
-export function sanitizeAuthError(error: any): string {
+export function sanitizeAuthError(error: unknown): string {
   if (typeof error === 'string') return error;
   
   if (error?.message) {

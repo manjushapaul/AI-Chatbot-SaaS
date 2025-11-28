@@ -48,7 +48,7 @@ export default function UsersPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [stats, setStats] = useState<any>({});
+  const [stats, setStats] = useState<{ totalMembers?: number; activeUsers?: number; admins?: number; botOperators?: number }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -345,7 +345,7 @@ export default function UsersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className={typography.pageTitle}>Team Members</h1>
-            <p className={typography.pageSubtitle}>Manage your team's access and permissions</p>
+            <p className={typography.pageSubtitle}>Manage your team&apos;s access and permissions</p>
           </div>
           <button
             onClick={() => setShowInviteModal(true)}

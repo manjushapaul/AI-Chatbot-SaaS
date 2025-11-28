@@ -44,7 +44,7 @@ export default function KnowledgeBaseDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [selectedDocument, setSelectedDocument] = useState<{ id: string; name: string; type: string; [key: string]: unknown } | null>(null);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
   const knowledgeBaseId = params.id as string;

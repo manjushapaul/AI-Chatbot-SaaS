@@ -466,7 +466,7 @@ export class StripeService {
    */
   async refundPayment(paymentIntentId: string, amount?: number, reason?: string): Promise<void> {
     try {
-      const refundData: any = {
+      const refundData: { payment_intent: string; amount?: number; reason?: string; [key: string]: unknown } = {
         payment_intent: paymentIntentId,
       };
 
@@ -569,7 +569,7 @@ export class StripeService {
   /**
    * Update customer
    */
-  async updateCustomer(customerId: string, updateData: any) {
+  async updateCustomer(customerId: string, updateData: Record<string, unknown>) {
     try {
       return await stripe.customers.update(customerId, updateData);
     } catch (error) {
@@ -593,7 +593,7 @@ export class StripeService {
   /**
    * Create upcoming invoice (placeholder for future implementation)
    */
-  async createUpcomingInvoice(params: any) {
+  async createUpcomingInvoice(params: Record<string, unknown>) {
     // This will be implemented when needed
     console.log('Upcoming invoice creation not yet implemented');
     throw new Error('Upcoming invoice creation not yet implemented');

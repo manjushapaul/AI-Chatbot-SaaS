@@ -161,7 +161,7 @@ export default function EditWidgetPage() {
                 color: '#FFFFFF'
               }}
             >
-              Hello! I'm here to help.
+              Hello! I&apos;m here to help.
             </div>
           </div>
         </div>

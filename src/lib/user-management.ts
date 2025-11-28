@@ -133,7 +133,7 @@ export class UserManagementService {
       await prisma.user.update({
         where: { id: userId },
         data: { 
-          role: newRole as any,
+          role: newRole as 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'USER' | 'BOT_OPERATOR',
           updatedAt: new Date()
         }
       });

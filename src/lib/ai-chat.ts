@@ -35,7 +35,7 @@ export interface ChatResponse {
 
 export class AIChatService {
   private openai: OpenAI;
-  private aiService: any;
+  private aiService: { generateResponse?: (prompt: string) => Promise<string>; [key: string]: unknown } | null;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;

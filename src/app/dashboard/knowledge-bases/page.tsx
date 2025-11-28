@@ -121,7 +121,7 @@ export default function KnowledgeBasesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className={typography.pageTitle}>Knowledge Bases</h1>
-            <p className={typography.pageSubtitle}>Manage your bot's knowledge and training data</p>
+            <p className={typography.pageSubtitle}>Manage your bot&apos;s knowledge and training data</p>
           </div>
           <Link
             href="/dashboard/knowledge-bases/create"

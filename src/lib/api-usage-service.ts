@@ -12,7 +12,7 @@ export interface APIUsageRecord {
   userId?: string;
   botId?: string;
   conversationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UsageSummary {
@@ -180,22 +180,22 @@ export class APIUsageService {
       });
 
       const totalRequests = usage.length;
-      const successfulRequests = usage.filter((u: any) => u.statusCode >= 200 && u.statusCode < 300).length;
+      const successfulRequests = usage.filter((u: APIUsage) => u.statusCode >= 200 && u.statusCode < 300).length;
       const failedRequests = totalRequests - successfulRequests;
-      const totalTokens = usage.reduce((sum: number, u: any) => sum + (u.tokensUsed || 0), 0);
+      const totalTokens = usage.reduce((sum: number, u: APIUsage) => sum + (u.tokensUsed || 0), 0);
       const averageResponseTime = totalRequests > 0 
-        ? usage.reduce((sum: number, u: any) => sum + u.responseTime, 0) / totalRequests 
+        ? usage.reduce((sum: number, u: APIUsage) => sum + u.responseTime, 0) / totalRequests 
         : 0;
 
       // Group by endpoint
       const requestsByEndpoint: Record<string, number> = {};
-      usage.forEach((u: any) => {
+      usage.forEach((u: APIUsage) => {
         requestsByEndpoint[u.endpoint] = (requestsByEndpoint[u.endpoint] || 0) + 1;
       });
 
       // Group by status code
       const requestsByStatus: Record<string, number> = {};
-      usage.forEach((u: any) => {
+      usage.forEach((u: APIUsage) => {
         const statusGroup = Math.floor(u.statusCode / 100) + 'xx';
         requestsByStatus[statusGroup] = (requestsByStatus[statusGroup] || 0) + 1;
       });

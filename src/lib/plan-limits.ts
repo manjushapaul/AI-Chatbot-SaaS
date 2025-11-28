@@ -129,7 +129,7 @@ export class PlanLimitsService {
           const docs = await prisma.document.findMany({
             where: { knowledgeBase: { tenantId: tenantId } }
           });
-          const totalSize = docs.reduce((acc: number, doc: any) => {
+          const totalSize = docs.reduce((acc: number, doc: { content?: string; [key: string]: unknown }) => {
             // Estimate size: 1 character ≈ 1 byte
             return acc + (doc.content?.length || 0);
           }, 0);

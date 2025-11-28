@@ -260,13 +260,13 @@ export class AIService {
       const allDocuments: Document[] = [];
       const allFaqs: FAQ[] = [];
 
-      knowledgeBases.forEach((kb: any) => {
+      knowledgeBases.forEach((kb: { documents?: Array<{ content?: string; [key: string]: unknown }>; faqs?: Array<{ answer?: string; [key: string]: unknown }>; [key: string]: unknown }) => {
         // Safely handle documents and faqs arrays
         if (kb.documents && Array.isArray(kb.documents)) {
-          allDocuments.push(...kb.documents.filter((doc: any) => doc && doc.content));
+          allDocuments.push(...kb.documents.filter((doc: { content?: string; [key: string]: unknown }) => doc && doc.content));
         }
         if (kb.faqs && Array.isArray(kb.faqs)) {
-          allFaqs.push(...kb.faqs.filter((faq: any) => faq && faq.answer));
+          allFaqs.push(...kb.faqs.filter((faq: { answer?: string; [key: string]: unknown }) => faq && faq.answer));
         }
       });
 

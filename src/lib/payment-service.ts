@@ -13,7 +13,14 @@ export interface PaymentMethod {
   billingDetails?: {
     name?: string;
     email?: string;
-    address?: any;
+    address?: {
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+      country?: string;
+    };
   };
 }
 
@@ -110,7 +117,7 @@ export class PaymentService {
       });
 
       // Combine Stripe invoices with local billing history
-      const allInvoices = [...invoices, ...localInvoices.map((local: any) => ({
+      const allInvoices = [...invoices, ...localInvoices.map((local: { id: string; amount: number; [key: string]: unknown }) => ({
         id: local.id,
         number: local.invoiceNumber,
         amount: local.amount,
@@ -257,7 +264,7 @@ export class PaymentService {
         take: limit
       });
 
-      return billingHistory.map((record: any) => ({
+      return billingHistory.map((record: { id: string; amount: number; [key: string]: unknown }) => ({
         id: record.id,
         amount: record.amount,
         currency: record.currency,
@@ -287,19 +294,38 @@ export class PaymentService {
   /**
    * Get subscription billing information
    */
-  async getSubscriptionBilling(subscriptionId: string): Promise<any> {
+  async getSubscriptionBilling(subscriptionId: string): Promise<{
+    id: string;
+    status: string;
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    cancelAtPeriodEnd: boolean | null;
+    defaultPaymentMethod: string | null;
+    latestInvoice: string | null;
+    nextPendingInvoiceItemInvoice: string | null;
+  }> {
     try {
       const subscription = await stripeService.getSubscription(subscriptionId);
+      const sub = subscription as { 
+        id: string; 
+        status: string; 
+        current_period_start?: number; 
+        current_period_end?: number; 
+        cancel_at_period_end?: boolean | null;
+        default_payment_method?: string | null;
+        latest_invoice?: string | null;
+        next_pending_invoice_item_invoice?: string | null;
+      };
       
       return {
-        id: subscription.id,
-        status: subscription.status,
-        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-        cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
-        defaultPaymentMethod: (subscription as any).default_payment_method,
-        latestInvoice: (subscription as any).latest_invoice,
-        nextPendingInvoiceItemInvoice: (subscription as any).next_pending_invoice_item_invoice
+        id: sub.id,
+        status: sub.status,
+        currentPeriodStart: new Date((sub.current_period_start || 0) * 1000),
+        currentPeriodEnd: new Date((sub.current_period_end || 0) * 1000),
+        cancelAtPeriodEnd: sub.cancel_at_period_end ?? null,
+        defaultPaymentMethod: sub.default_payment_method ?? null,
+        latestInvoice: sub.latest_invoice ?? null,
+        nextPendingInvoiceItemInvoice: sub.next_pending_invoice_item_invoice ?? null
       };
     } catch (error) {
       console.error('Error getting subscription billing:', error);

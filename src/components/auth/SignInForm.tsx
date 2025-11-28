@@ -74,7 +74,7 @@ export function SignInForm({ tenant, onSwitchToSignUp }: SignInFormProps) {
               />
             </div>
             <p className={typography.helperText}>
-              Enter your company's subdomain (e.g., yourcompany.yourdomain.com)
+              Enter your company&apos;s subdomain (e.g., yourcompany.yourdomain.com)
             </p>
           </div>
         )}

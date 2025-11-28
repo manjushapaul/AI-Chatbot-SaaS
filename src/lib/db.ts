@@ -203,7 +203,7 @@ export class TenantDB {
     type: 'PDF' | 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON';
     url?: string;
     knowledgeBaseId: string;
-    embeddings?: any;
+    embeddings?: Record<string, unknown>[];
   }) {
     return prisma.document.create({
       data: {
@@ -283,7 +283,7 @@ export class TenantDB {
     userId: string;
     botId: string;
     title?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }) {
     return prisma.conversation.create({
       data: {
@@ -387,7 +387,7 @@ export class TenantDB {
   async updateConversation(id: string, data: {
     status?: 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
     title?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     closedAt?: Date;
   }) {
     return prisma.conversation.update({
@@ -421,7 +421,7 @@ export class TenantDB {
     cost: number;
     model?: string;
     responseTime?: number;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }) {
     const message = await prisma.message.create({
       data: {
@@ -516,7 +516,7 @@ export class TenantDB {
   async createWidget(data: {
     name: string;
     type: 'CHAT_WIDGET' | 'POPUP' | 'EMBEDDED' | 'FLOATING';
-    config: any;
+    config: Record<string, unknown>;
     botId: string;
   }) {
     return prisma.widget.create({
@@ -728,7 +728,7 @@ export class TenantDB {
     category: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     actionUrl?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }) {
     try {
       // Validate required fields
@@ -832,7 +832,7 @@ export class TenantDB {
     }
   ) {
     try {
-      const where: any = {
+      const where: { userId: string; tenantId: string; [key: string]: unknown } = {
         userId,
         tenantId: this.tenantId,
       };
@@ -909,14 +909,14 @@ export class TenantDB {
         where: {
           userId_category: {
             userId,
-            category: pref.category as any,
+            category: pref.category as 'BOT_ACTIVITY' | 'SYSTEM' | 'PERFORMANCE' | 'BUSINESS_METRICS' | 'BILLING' | 'SECURITY' | 'KNOWLEDGE_BASE' | 'WIDGETS',
           },
         },
         update: {
           inAppEnabled: pref.inAppEnabled,
           emailEnabled: pref.emailEnabled,
           smsEnabled: pref.smsEnabled,
-          frequency: (pref.frequency || 'REALTIME') as any,
+          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'DAILY' | 'WEEKLY' | 'NEVER',
           quietHoursStart: pref.quietHoursStart,
           quietHoursEnd: pref.quietHoursEnd,
         },
@@ -926,7 +926,7 @@ export class TenantDB {
           inAppEnabled: pref.inAppEnabled ?? true,
           emailEnabled: pref.emailEnabled ?? false,
           smsEnabled: pref.smsEnabled ?? false,
-          frequency: (pref.frequency || 'REALTIME') as any,
+          frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'DAILY' | 'WEEKLY' | 'NEVER',
           quietHoursStart: pref.quietHoursStart,
           quietHoursEnd: pref.quietHoursEnd,
         },
@@ -979,7 +979,7 @@ export async function createTenant(data: {
   return prisma.tenant.create({
     data: {
       ...data,
-      plan: data.plan as any || 'FREE',
+      plan: (data.plan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | undefined) || 'FREE',
     },
   });
 } 

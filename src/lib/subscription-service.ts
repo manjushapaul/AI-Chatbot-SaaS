@@ -182,7 +182,7 @@ export class SubscriptionService {
    */
   private async changePaidPlan(
     tenantId: string,
-    currentSubscription: any,
+    currentSubscription: { id: string; plan: string; [key: string]: unknown },
     newPlanId: string,
     userId: string,
     reason?: string
@@ -401,7 +401,7 @@ export class SubscriptionService {
         status: 'PENDING',
         billingPeriodStart: new Date(),
         billingPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        plan: toPlan as any,
+        plan: toPlan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE',
         planChange: changeType,
         description: `Plan change from ${fromPlan} to ${toPlan}`,
         metadata: {

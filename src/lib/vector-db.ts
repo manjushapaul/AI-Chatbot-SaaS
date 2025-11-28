@@ -47,7 +47,7 @@ export class VectorDB {
   async initializeIndex() {
     try {
       const indexes = await this.pinecone.listIndexes();
-      const indexExists = indexes.indexes?.some((index: any) => index.name === this.indexName) || false;
+      const indexExists = indexes.indexes?.some((index: { name?: string; [key: string]: unknown }) => index.name === this.indexName) || false;
 
       if (!indexExists) {
         console.log(`Creating Pinecone index: ${this.indexName}`);
