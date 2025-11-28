@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const conversations = await db.getConversations(filters);
     
     // Transform the data to match the frontend interface
-    const transformedConversations = conversations.map((conv: { id: string; userId: string | null; botId: string; bot?: { name: string } | null }) => ({
+    const transformedConversations = conversations.map((conv: { id: string; userId: string | null; botId: string; bot?: { name: string | null; id: string } | null; user?: { name: string | null; email: string; id: string } | null; status: string; startedAt?: Date; lastMessageAt?: Date; totalTokens?: number; totalCost?: number; _count?: { messages?: number }; [key: string]: unknown }) => ({
       id: conv.id,
       userId: conv.userId,
       botId: conv.botId,

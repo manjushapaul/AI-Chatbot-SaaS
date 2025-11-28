@@ -161,7 +161,7 @@ export function Sidebar() {
                           }`}
                         >
                           <div className={isActive(child.href) ? '[&_svg]:text-white' : ''}>
-                            {child.icon}
+                          {child.icon}
                           </div>
                           <span>{child.label}</span>
                         </Link>
@@ -179,7 +179,7 @@ export function Sidebar() {
                   }`}
                 >
                   <div className={isActive(item.href) ? '[&_svg]:text-white' : ''}>
-                    {item.icon}
+                  {item.icon}
                   </div>
                   <span>{item.label}</span>
                 </Link>

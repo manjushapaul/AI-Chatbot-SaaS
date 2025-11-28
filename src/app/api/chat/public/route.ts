@@ -61,6 +61,12 @@ export async function POST(request: NextRequest) {
         where: { 
           id: conversationId,
           botId: botId
+        },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'asc' },
+            take: 50 // Limit to recent messages
+          }
         }
       });
       
@@ -71,23 +77,50 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // Create new conversation with better session management
+      // Create new conversation for public chat
+      // For public chats, we need a userId. We'll use the bot's tenant's first admin user
+      // or create a system user if none exists
+      let userId: string;
+      const tenantUser = await prisma.user.findFirst({
+        where: { tenantId: bot.tenantId },
+        orderBy: { createdAt: 'asc' }
+      });
+      
+      if (tenantUser) {
+        userId = tenantUser.id;
+      } else {
+        // Create a system user for public chats if no users exist
+        const systemUser = await prisma.user.create({
+          data: {
+            email: `system@${bot.tenantId}.public`,
+            name: 'Public Chat User',
+            tenantId: bot.tenantId,
+            role: 'USER'
+          }
+        });
+        userId = systemUser.id;
+      }
+      
       const sessionId = `public_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       conversation = await prisma.conversation.create({
         data: {
-          sessionId,
+          userId,
           botId,
           tenantId: bot.tenantId,
-          status: 'ACTIVE'
+          status: 'ACTIVE',
+          metadata: {
+            sessionId,
+            isPublic: true
+          }
         }
       });
     }
 
-    // Basic rate limiting - check conversation count in last hour
+    // Basic rate limiting - check conversation count in last hour for this bot
     const recentConversations = await prisma.conversation.count({
       where: {
-        sessionId: conversation.sessionId,
-        createdAt: {
+        botId: botId,
+        startedAt: {
           gte: new Date(Date.now() - 60 * 60 * 1000) // Last hour
         }
       }
@@ -151,8 +184,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Public chat API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }
@@ -179,7 +216,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         messages: {
-          orderBy: { timestamp: 'asc' }
+          orderBy: { createdAt: 'asc' }
         }
       }
     });
@@ -191,16 +228,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get sessionId from metadata if it exists
+    const sessionId = (conversation.metadata as { sessionId?: string } | null)?.sessionId || conversation.id;
+    
     return NextResponse.json({
       success: true,
       data: {
         conversationId: conversation.id,
-        sessionId: conversation.sessionId,
-        messages: conversation.messages.map((msg: { id: string; content: string; role: string; timestamp: Date }) => ({
+        sessionId: sessionId,
+        messages: conversation.messages.map((msg: { id: string; content: string; role: string; createdAt: Date }) => ({
           id: msg.id,
           content: msg.content,
           role: msg.role.toLowerCase(),
-          timestamp: msg.timestamp
+          timestamp: msg.createdAt
         }))
       }
     }, {
@@ -213,8 +253,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Get public conversation API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }
