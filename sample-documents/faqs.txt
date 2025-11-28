@@ -1,0 +1,67 @@
+FREQUENTLY ASKED QUESTIONS
+
+GENERAL QUESTIONS
+
+Q: What is an AI chatbot?
+A: An AI chatbot is a computer program that uses artificial intelligence to simulate human conversation. It can understand user questions and provide relevant, helpful responses based on its training data.
+
+Q: How does the AI chatbot learn?
+A: Our AI chatbots learn through machine learning algorithms that process the knowledge base documents you upload, conversations they have with users, and feedback you provide. They continuously improve over time.
+
+Q: What types of businesses can use this platform?
+A: Any business that wants to provide 24/7 customer support, answer common questions, or automate customer interactions can benefit from our AI chatbot platform. This includes e-commerce, healthcare, education, and service industries.
+
+TECHNICAL QUESTIONS
+
+Q: What file formats are supported for document uploads?
+A: We support PDF, Word (.docx), Text (.txt), HTML, Markdown (.md), and JSON files. All documents are automatically processed and optimized for AI training.
+
+Q: How secure is my data?
+A: We use enterprise-grade security measures including encryption, secure data centers, and strict access controls. Your data is never shared with third parties and is protected by industry-standard security protocols.
+
+Q: Can I integrate the chatbot with my existing systems?
+A: Yes! We provide API access, webhook support, and integrations with popular platforms like Slack, Teams, and Discord. You can also embed the chatbot directly on your website.
+
+Q: What AI models are available?
+A: We currently support GPT-3.5, GPT-4, and Claude models. Each has different strengths in terms of speed, accuracy, and cost. You can choose the best model for your specific use case.
+
+PRICING AND BILLING
+
+Q: How much does the platform cost?
+A: We offer flexible pricing plans starting at $29/month for basic features. Pricing depends on the number of conversations, AI model usage, and advanced features you need. Contact our sales team for a custom quote.
+
+Q: Are there any hidden fees?
+A: No hidden fees! Our pricing is transparent and includes all core features. Additional costs may apply for premium AI models, advanced analytics, or custom integrations.
+
+Q: Can I change my plan later?
+A: Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing adjustments.
+
+FEATURES AND FUNCTIONALITY
+
+Q: How many knowledge bases can I create?
+A: The number depends on your plan. Basic plans allow 3 knowledge bases, while premium plans support unlimited knowledge bases and advanced features.
+
+Q: Can I customize the chatbot's appearance?
+A: Absolutely! You can customize colors, fonts, chat window size, and even add your company logo. We also offer pre-built themes for quick setup.
+
+Q: Does the chatbot work in multiple languages?
+A: Yes, our platform supports multiple languages. You can train your chatbot in different languages by uploading documents in those languages.
+
+Q: How accurate are the chatbot responses?
+A: Response accuracy depends on the quality and quantity of your training data. With proper knowledge base setup, our chatbots typically achieve 85-95% accuracy on common questions.
+
+SUPPORT AND TRAINING
+
+Q: Do you provide training and support?
+A: Yes! We offer comprehensive onboarding, video tutorials, documentation, and 24/7 customer support. Our team will help you get started and optimize your chatbot.
+
+Q: How long does it take to set up a chatbot?
+A: Basic setup can be completed in under 30 minutes. For advanced configurations with custom integrations, it typically takes 1-2 days with our support team's assistance.
+
+Q: Can I export my chatbot data?
+A: Yes, you can export your knowledge base, conversation logs, and analytics data at any time. Your data belongs to you and is easily portable.
+
+Q: What if I need custom features?
+A: We offer custom development services for enterprise clients. Our team can build custom integrations, advanced analytics, or specialized features to meet your specific requirements.
+
+For additional questions or support, please contact our customer success team at support@aichatbot.com or use the live chat feature on our website. 

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Widget Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Test Public Chat API</h2>
+        <p>Test the public chat endpoint directly:</p>
+        <button class="test-button" onclick="testPublicChat()">Test Public Chat</button>
+        <button class="test-button" onclick="testGetConversation()">Test Get Conversation</button>
+        <div id="api-response"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Chat Widget</h2>
+        <p>Test the chat widget component:</p>
+        <button class="test-button" onclick="toggleWidget()">Toggle Widget</button>
+        <div id="widget-container"></div>
+    </div>
+
+    <script>
+        let currentConversationId = null;
+        let currentBotId = 'test-bot-id'; // Replace with actual bot ID
+
+        async function testPublicChat() {
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.innerHTML = '<div class="response">Testing...</div>';
+            
+            try {
+                const response = await fetch('/api/chat/public', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello, this is a test message from the test page',
+                        botId: currentBotId,
+                        conversationId: currentConversationId,
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    currentConversationId = data.data.conversationId;
+                    responseDiv.innerHTML = `
+                        <div class="response success">
+                            ✅ Chat successful!
+                            Conversation ID: ${data.data.conversationId}
+                            Response: ${data.data.message}
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="response error">
+                            ❌ Chat failed: ${data.error || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="response error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testGetConversation() {
+            if (!currentConversationId) {
+                document.getElementById('api-response').innerHTML = 
+                    '<div class="response error">❌ No conversation ID available. Send a message first.</div>';
+                return;
+            }
+
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.innerHTML = '<div class="response">Loading conversation...</div>';
+            
+            try {
+                const response = await fetch(
+                    `/api/chat/public?conversationId=${currentConversationId}&botId=${currentBotId}`
+                );
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    responseDiv.innerHTML = `
+                        <div class="response success">
+                            ✅ Conversation loaded!
+                            Messages: ${data.data.messages.length}
+                            ${data.data.messages.map(msg => 
+                                `${msg.role}: ${msg.content}`
+                            ).join('\n')}
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="response error">
+                            ❌ Failed to load conversation: ${data.error || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="response error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function toggleWidget() {
+            const container = document.getElementById('widget-container');
+            if (container.innerHTML) {
+                container.innerHTML = '';
+            } else {
+                // Create a simple widget-like interface for testing
+                container.innerHTML = `
+                    <div style="border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h3>Chat Widget Test Interface</h3>
+                        <p>Bot ID: ${currentBotId}</p>
+                        <p>Conversation ID: ${currentConversationId || 'None'}</p>
+                        <div style="margin: 10px 0;">
+                            <input type="text" id="test-message" placeholder="Type a test message..." 
+                                   style="width: 70%; padding: 8px; margin-right: 10px;">
+                            <button onclick="sendTestMessage()" class="test-button">Send</button>
+                        </div>
+                        <div id="test-messages" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
+                    </div>
+                `;
+            }
+        }
+
+        async function sendTestMessage() {
+            const input = document.getElementById('test-message');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const messagesDiv = document.getElementById('test-messages');
+            messagesDiv.innerHTML += `<div><strong>You:</strong> ${message}</div>`;
+            input.value = '';
+
+            try {
+                const response = await fetch('/api/chat/public', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        botId: currentBotId,
+                        conversationId: currentConversationId,
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    currentConversationId = data.data.conversationId;
+                    messagesDiv.innerHTML += `<div><strong>Bot:</strong> ${data.data.message}</div>`;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } else {
+                    messagesDiv.innerHTML += `<div style="color: red;"><strong>Error:</strong> ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                messagesDiv.innerHTML += `<div style="color: red;"><strong>Error:</strong> ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

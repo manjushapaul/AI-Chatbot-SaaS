@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getTenantContext } from '@/lib/tenant';
+import { createTenantDB } from '@/lib/db';
+
+export async function GET(request: NextRequest) {
+  try {
+    const tenantContext = await getTenantContext();
+    if (!tenantContext) {
+      return NextResponse.json(
+        { error: 'Tenant not found' },
+        { status: 404 }
+      );
+    }
+
+    const tenantDB = createTenantDB(tenantContext.id);
+    const widgets = await tenantDB.getWidgets();
+
+    return NextResponse.json({
+      success: true,
+      data: widgets,
+    });
+
+  } catch (error) {
+    console.error('Get widgets API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const tenantContext = await getTenantContext();
+    if (!tenantContext) {
+      return NextResponse.json(
+        { error: 'Tenant not found' },
+        { status: 404 }
+      );
+    }
+
+    const {
+      name,
+      type,
+      config,
+      botId,
+    } = await request.json();
+
+    if (!name || !type || !botId) {
+      return NextResponse.json(
+        { error: 'Name, type, and botId are required' },
+        { status: 400 }
+      );
+    }
+
+    const tenantDB = createTenantDB(tenantContext.id);
+    
+    // Validate bot exists and belongs to tenant
+    const bot = await tenantDB.getBot(botId);
+    if (!bot) {
+      return NextResponse.json(
+        { error: 'Bot not found' },
+        { status: 404 }
+      );
+    }
+
+    const widget = await tenantDB.createWidget({
+      name,
+      type,
+      config,
+      botId,
+    });
+
+    // Create notification for new widget installation
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        const preferences = await tenantDB.getNotificationPreferences(session.user.id);
+        const widgetPref = preferences.find(p => p.category === 'widget');
+        
+        if (!widgetPref || widgetPref.inAppEnabled) {
+          await tenantDB.createNotification({
+            userId: session.user.id,
+            type: 'WIDGET',
+            title: 'New widget installed',
+            message: `Widget "${name}" has been successfully installed and is ready to use`,
+            category: 'widget',
+            priority: 'MEDIUM',
+            actionUrl: `/dashboard/widgets/${widget.id}/edit`,
+            metadata: {
+              widgetId: widget.id,
+              widgetName: name,
+              widgetType: type,
+              botId: botId,
+            },
+          });
+        }
+      }
+    } catch (notifError) {
+      console.error('Failed to create widget notification:', notifError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: widget,
+    }, { status: 201 });
+
+  } catch (error) {
+    console.error('Create widget API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+} 

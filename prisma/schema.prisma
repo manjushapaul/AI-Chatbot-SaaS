@@ -1,0 +1,504 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tenant management
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  subdomain   String   @unique
+  customDomain String?
+  plan        Plan     @default(FREE)
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  users       User[]
+  bots        Bot[]
+  conversations Conversation[]
+  knowledgeBases KnowledgeBase[]
+  widgets     Widget[]
+  apiKeys     ApiKey[]
+  subscriptions Subscription[]
+  billingHistory BillingHistory[]
+  apiUsage    APIUsage[]
+  notifications Notification[]
+
+  @@map("tenants")
+}
+
+// User management with multi-tenancy
+model User {
+  id        String   @id @default(cuid())
+  email     String
+  name      String?
+  password  String?  // Hashed password for authentication
+  role      UserRole @default(USER)
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Tenant relationship
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  conversations Conversation[]
+  apiKeys     ApiKey[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
+
+  @@unique([email, tenantId])
+  @@map("users")
+}
+
+// Bot configurations
+model Bot {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  personality String?
+  model       String   @default("gpt-3.5-turbo")
+  temperature Float    @default(0.7)
+  maxTokens   Int      @default(1000)
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  conversations Conversation[]
+  knowledgeBases KnowledgeBase[]
+  widgets      Widget[]
+
+  @@map("bots")
+}
+
+// Knowledge base management
+model KnowledgeBase {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Bot relationship
+  botId       String
+  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  documents   Document[]
+  faqs        FAQ[]
+
+  @@map("knowledge_bases")
+}
+
+// Document storage for knowledge base
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  type        DocumentType
+  url         String?
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Knowledge base relationship
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  // Vector embeddings (stored as JSON for flexibility)
+  embeddings  Json?
+
+  @@map("documents")
+}
+
+// FAQ management
+model FAQ {
+  id          String   @id @default(cuid())
+  question    String
+  answer      String
+  category    String?
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Knowledge base relationship
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@map("faqs")
+}
+
+// Widget configurations
+model Widget {
+  id          String   @id @default(cuid())
+  name        String
+  type        WidgetType
+  config      Json
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Bot relationship
+  botId       String
+  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@map("widgets")
+}
+
+// API key management
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  permissions Json
+  lastUsed    DateTime?
+  expiresAt   DateTime?
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // User relationship
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+// Subscription management
+model Subscription {
+  id                    String              @id @default(cuid())
+  tenantId              String              @unique
+  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Plan information
+  plan                  Plan                @default(FREE)
+  previousPlan          Plan?
+  
+  // Stripe integration
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  stripePriceId         String?
+  
+  // Subscription status
+  status                SubscriptionStatus  @default(ACTIVE)
+  
+  // Billing cycle
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean             @default(false)
+  
+  // Usage tracking
+  monthlyUsage          Json                @default("{}") // Store usage metrics as JSON
+  
+  // Metadata
+  metadata              Json?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@map("subscriptions")
+}
+
+// Billing history and invoices
+model BillingHistory {
+  id                    String              @id @default(cuid())
+  tenantId              String
+  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Invoice details
+  invoiceNumber         String              @unique
+  amount                Float
+  currency              String              @default("USD")
+  
+  // Stripe integration
+  stripeInvoiceId       String?
+  stripePaymentIntentId String?
+  
+  // Status
+  status                InvoiceStatus       @default(PENDING)
+  
+  // Billing period
+  billingPeriodStart    DateTime
+  billingPeriodEnd      DateTime
+  
+  // Plan information
+  plan                  Plan
+  planChange            PlanChangeType?
+  
+  // Metadata
+  description           String?
+  metadata              Json?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@map("billing_history")
+}
+
+// API usage tracking
+model APIUsage {
+  id                    String              @id @default(cuid())
+  tenantId              String
+  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Request details
+  endpoint              String
+  method                String
+  statusCode            Int
+  responseTime          Int                 // in milliseconds
+  
+  // Usage metrics
+  tokensUsed            Int?
+  model                 String?
+  
+  // Metadata
+  userId                String?
+  botId                 String?
+  conversationId        String?
+  conversation          Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  metadata              Json?
+  
+  // Timestamp
+  timestamp             DateTime            @default(now())
+
+  @@map("api_usage")
+}
+
+// Conversation management
+model Conversation {
+  id          String              @id @default(cuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // User and Bot relationships
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botId       String
+  bot         Bot                 @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  // Conversation details
+  status      ConversationStatus  @default(ACTIVE)
+  title       String?             // Auto-generated from first message
+  metadata    Json?               // Additional conversation data
+  
+  // Usage tracking
+  totalTokens Int                 @default(0)
+  totalCost   Float               @default(0.0)
+  messageCount Int                @default(0)
+  
+  // Timestamps
+  startedAt   DateTime            @default(now())
+  lastMessageAt DateTime          @updatedAt
+  closedAt    DateTime?
+  
+  // Relationships
+  messages    Message[]
+  apiUsage    APIUsage[]
+  
+  @@map("conversations")
+}
+
+// Individual messages within conversations
+model Message {
+  id              String          @id @default(cuid())
+  conversationId  String
+  conversation    Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  // Message content
+  role            MessageRole
+  content         String          @db.Text
+  tokens          Int             @default(0)
+  cost            Float           @default(0.0)
+  
+  // AI-specific fields
+  model           String?         // AI model used
+  responseTime    Int?            // Response time in milliseconds
+  metadata        Json?           // Additional message data
+  
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  
+  @@map("messages")
+}
+
+// Enums
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  WHITE_LABEL
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  USER
+  BOT_OPERATOR
+}
+
+enum DocumentType {
+  PDF
+  DOCX
+  TXT
+  HTML
+  MARKDOWN
+  JSON
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum WidgetType {
+  CHAT_WIDGET
+  POPUP
+  EMBEDDED
+  FLOATING
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  UNPAID
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  VOID
+  REFUNDED
+}
+
+enum PlanChangeType {
+  UPGRADE
+  DOWNGRADE
+  CANCELLATION
+  REACTIVATION
+}
+
+// Notification system
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  type        NotificationType
+  title       String
+  message     String   @db.Text
+  category    NotificationCategory
+  priority    NotificationPriority @default(MEDIUM)
+  actionUrl   String?
+  metadata    Json?
+  
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+  
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  category        NotificationCategory
+  inAppEnabled    Boolean  @default(true)
+  emailEnabled    Boolean  @default(false)
+  smsEnabled      Boolean  @default(false)
+  frequency       NotificationFrequency @default(REALTIME)
+  quietHoursStart String?
+  quietHoursEnd   String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([userId, category])
+  @@map("notification_preferences")
+}
+
+enum NotificationType {
+  BOT_ACTIVITY
+  SYSTEM
+  METRICS
+  TEAM
+  BILLING
+  SECURITY
+  KB
+  WIDGET
+}
+
+enum NotificationCategory {
+  bot_activity
+  system
+  metrics
+  team
+  billing
+  security
+  kb
+  widget
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationFrequency {
+  REALTIME
+  HOURLY_DIGEST
+  DAILY_DIGEST
+} 

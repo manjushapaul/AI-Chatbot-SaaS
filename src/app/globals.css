@@ -1,0 +1,447 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  /* Theme CSS Variables */
+  :root[data-theme='light'] {
+    --accent-strong: #e501aee6; /* existing pink */
+    --accent-soft: #F973B9;
+    --bg-body-from: #ffffff;
+    --bg-body-via: #F7EAFB;
+    --bg-body-to: #FDEFF6;
+    --chart-primary: #F973B9; /* pink for charts */
+  }
+
+  :root[data-theme='dark'] {
+    --accent-strong: #563517b3; /* 70% opacity coffee */
+    --accent-soft: #563517e6;  /* 90% opacity coffee */
+    --bg-body-from: #ffffff;
+    --bg-body-via: #5635171c;
+    --bg-body-to: #56351794;
+    --chart-primary: #825037; /* coffee brown for charts */
+  }
+}
+
+@layer utilities {
+  .bg-accent-strong {
+    background-color: var(--accent-strong);
+  }
+  .bg-accent-strong-50 {
+    background-color: color-mix(in srgb, var(--accent-strong) 50%, transparent);
+  }
+  .bg-accent-soft {
+    background-color: var(--accent-soft);
+  }
+  .bg-accent-soft-80 {
+    background-color: color-mix(in srgb, var(--accent-soft) 80%, transparent);
+  }
+  .bg-accent-soft-10 {
+    background-color: color-mix(in srgb, var(--accent-soft) 10%, transparent);
+  }
+  .bg-accent-soft-20 {
+    background-color: color-mix(in srgb, var(--accent-soft) 20%, transparent);
+  }
+  .border-accent-strong {
+    border-color: var(--accent-strong);
+  }
+  .border-accent-soft {
+    border-color: var(--accent-soft);
+  }
+  .text-accent-soft {
+    color: var(--accent-soft);
+  }
+  .text-accent-strong {
+    color: var(--accent-strong);
+  }
+  .ring-accent-soft {
+    --tw-ring-color: var(--accent-soft);
+  }
+  .ring-accent-strong {
+    --tw-ring-color: var(--accent-strong);
+  }
+}
+
+@layer base {
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background: linear-gradient(to bottom, var(--bg-body-from), var(--bg-body-via), var(--bg-body-to));
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  /* Button Component Styles */
+  .btn {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-default {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2;
+  }
+
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2;
+  }
+
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline h-10 px-4 py-2;
+  }
+
+  .btn-sm {
+    @apply h-9 rounded-md px-3;
+  }
+
+  .btn-lg {
+    @apply h-11 rounded-md px-8;
+  }
+
+  .btn-icon {
+    @apply h-10 w-10;
+  }
+
+  /* Input Component Styles */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Label Component Styles */
+  .label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+
+  /* Alert Component Styles */
+  .alert {
+    @apply relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground;
+  }
+
+  .alert-default {
+    @apply bg-background text-foreground;
+  }
+
+  .alert-destructive {
+    @apply border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive;
+  }
+
+  /* Form Styles */
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-error {
+    @apply text-sm text-destructive;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+
+  /* Navigation Styles */
+  .nav-link {
+    @apply flex items-center gap-2 rounded-lg px-3 py-2 text-gray-700 transition-all hover:text-gray-900 hover:bg-gray-100;
+  }
+
+  .nav-link-active {
+    @apply bg-gray-100 text-gray-900;
+  }
+
+  /* Sidebar Styles */
+  .sidebar {
+    @apply w-64 bg-white border-r border-gray-200 p-4;
+  }
+
+  .sidebar-header {
+    @apply mb-6;
+  }
+
+  .sidebar-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+
+  .sidebar-nav {
+    @apply space-y-1;
+  }
+
+  /* Header Styles */
+  .header {
+    @apply bg-white border-b border-gray-200 px-6 py-4;
+  }
+
+  .header-content {
+    @apply flex items-center justify-between;
+  }
+
+  .header-title {
+    @apply text-xl font-semibold text-gray-900;
+  }
+
+  .header-actions {
+    @apply flex items-center gap-4;
+  }
+
+  /* Dashboard Layout Styles */
+  .dashboard-layout {
+    @apply min-h-screen bg-gray-50;
+  }
+
+  .dashboard-main {
+    @apply flex-1 p-6;
+  }
+
+  /* Authentication Page Styles */
+  .auth-container {
+    @apply min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8;
+  }
+
+  .auth-card {
+    @apply max-w-md w-full space-y-8;
+  }
+
+  .auth-header {
+    @apply text-center;
+  }
+
+  .auth-title {
+    @apply text-3xl font-bold text-gray-900;
+  }
+
+  .auth-subtitle {
+    @apply mt-2 text-sm text-gray-600;
+  }
+
+  .auth-form {
+    @apply mt-8 space-y-6;
+  }
+
+  .auth-toggle {
+    @apply text-center mt-4;
+  }
+
+  .auth-toggle-link {
+    @apply font-medium text-primary hover:text-primary/80;
+  }
+
+  /* Loading Spinner */
+  .loading-spinner {
+    @apply inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite];
+  }
+
+  /* Utility Classes */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  }
+
+  /* Custom Checkbox Style */
+  input[type="checkbox"] {
+    @apply appearance-none w-5 h-5 bg-white rounded border-2 border-gray-300 cursor-pointer relative;
+    transition: all 0.2s ease;
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: var(--accent-soft);
+    border-color: var(--accent-soft);
+  }
+
+  input[type="checkbox"]:checked::before {
+    content: '✓';
+    @apply absolute inset-0 flex items-center justify-center text-white font-bold text-sm;
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  input[type="checkbox"]:hover {
+    @apply border-gray-400;
+  }
+
+  input[type="checkbox"]:focus {
+    @apply outline-none;
+  }
+
+  /* Custom Radio Button Style */
+  input[type="radio"] {
+    @apply appearance-none w-4 h-4 bg-white rounded-full border-2 border-gray-300 cursor-pointer relative;
+    transition: all 0.2s ease;
+  }
+
+  input[type="radio"]:checked {
+    border-color: var(--accent-soft);
+  }
+
+  input[type="radio"]:checked::after {
+    content: '';
+    @apply absolute;
+    background-color: var(--accent-soft);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+  }
+
+  input[type="radio"]:hover {
+    @apply border-gray-400;
+  }
+
+  input[type="radio"]:focus {
+    @apply outline-none;
+  }
+
+  /* Glass Morphism for Input Fields, Selects, and Textareas */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="url"],
+  input[type="tel"],
+  select,
+  textarea {
+    @apply bg-white/20 backdrop-blur-md border border-white/30 rounded-lg shadow-sm;
+    transition: all 0.2s ease;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="url"]:focus,
+  input[type="tel"]:focus,
+  select:focus,
+  textarea:focus {
+    @apply outline-none border-white/50 shadow-md;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-soft) 20%, transparent);
+  }
+
+  input[type="text"]:hover,
+  input[type="email"]:hover,
+  input[type="password"]:hover,
+  input[type="number"]:hover,
+  input[type="url"]:hover,
+  input[type="tel"]:hover,
+  select:hover,
+  textarea:hover {
+    @apply border-white/40;
+  }
+}
+input.check-peer[type="checkbox"] {
+display: none;
+}
+
+/* Custom scrollbar for notification dropdown */
+/* .notification-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent-soft) 50%, transparent) #f1f5f9;
+} */
+
+.notification-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  -webkit-appearance: none;
+  display: block !important;
+}
+
+.notification-scrollbar::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 10px;
+  margin: 4px 0;
+}
+
+.notification-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent-soft) 60%, transparent);
+  border-radius: 10px;
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent-soft) 20%, transparent);
+}
+
+.notification-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent-soft) 80%, transparent);
+}
+
+.notification-scrollbar::-webkit-scrollbar-thumb:active {
+  background: color-mix(in srgb, var(--accent-soft) 90%, transparent);
+}
