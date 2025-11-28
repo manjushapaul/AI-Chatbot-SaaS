@@ -6,7 +6,7 @@ import { createTenantDB } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,16 +19,17 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id } = await params;
     const db = createTenantDB(tenant.id);
     const knowledgeBases = await db.getKnowledgeBases();
-    const knowledgeBase = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const knowledgeBase = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     
     if (!knowledgeBase) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Get documents for this knowledge base (use the separate method to ensure we get all documents)
-    let documents = await db.getDocumentsByKnowledgeBase(params.id);
+    let documents = await db.getDocumentsByKnowledgeBase(id);
     
     // If getDocumentsByKnowledgeBase returns empty but knowledgeBase has documents, use those
     // This handles cases where the separate query might have filtering issues
@@ -37,13 +38,13 @@ export async function GET(
     }
     
     // Get FAQs for this knowledge base
-    let faqs = await db.getFAQsByKnowledgeBase(params.id).catch(() => null);
+    let faqs = await db.getFAQsByKnowledgeBase(id).catch(() => null);
     if (!faqs || faqs.length === 0) {
       faqs = knowledgeBase.faqs || [];
     }
     
     // Get stats
-    const stats = await db.getKnowledgeBaseStats(params.id).catch(() => ({
+    const stats = await db.getKnowledgeBaseStats(id).catch(() => ({
       documentCount: documents.length,
       faqCount: faqs.length,
     }));
@@ -72,7 +73,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -85,6 +86,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id } = await params;
     const { name, description } = await request.json();
 
     if (!name) {
@@ -95,13 +97,13 @@ export async function PUT(
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Update knowledge base
-    const updatedKB = await db.updateKnowledgeBase(params.id, {
+    const updatedKB = await db.updateKnowledgeBase(id, {
       name,
       description,
     });
@@ -123,7 +125,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -136,17 +138,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id } = await params;
     const db = createTenantDB(tenant.id);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Delete knowledge base
-    await db.deleteKnowledgeBase(params.id);
+    await db.deleteKnowledgeBase(id);
 
     return NextResponse.json({
       success: true,

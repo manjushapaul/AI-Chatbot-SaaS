@@ -6,7 +6,7 @@ import { createTenantDB } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,17 +19,18 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id } = await params;
     const db = createTenantDB(tenant.id);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Get documents for this knowledge base
-    const documents = await db.getDocumentsByKnowledgeBase(params.id);
+    const documents = await db.getDocumentsByKnowledgeBase(id);
 
     return NextResponse.json({
       success: true,

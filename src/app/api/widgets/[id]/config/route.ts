@@ -3,10 +3,10 @@ import { createTenantDB } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const widgetId = params.id;
+    const { id: widgetId } = await params;
     
     if (!widgetId) {
       return NextResponse.json(

@@ -6,7 +6,7 @@ import { createTenantDB } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; faqId: string } }
+  { params }: { params: Promise<{ id: string; faqId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,6 +19,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id, faqId } = await params;
     const { question, answer, category } = await request.json();
 
     if (!question || !answer) {
@@ -29,13 +30,13 @@ export async function PUT(
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Update FAQ
-    const updatedFAQ = await db.updateFAQ(params.faqId, {
+    const updatedFAQ = await db.updateFAQ(faqId, {
       question,
       answer,
       category,
@@ -58,7 +59,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; faqId: string } }
+  { params }: { params: Promise<{ id: string; faqId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -71,17 +72,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id, faqId } = await params;
     const db = createTenantDB(tenant.id);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Delete FAQ
-    await db.deleteFAQ(params.faqId);
+    await db.deleteFAQ(faqId);
 
     return NextResponse.json({
       success: true,

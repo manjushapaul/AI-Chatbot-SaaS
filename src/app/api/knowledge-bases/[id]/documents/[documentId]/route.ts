@@ -6,7 +6,7 @@ import { createTenantDB } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; documentId: string } }
+  { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,17 +19,18 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id, documentId } = await params;
     const db = createTenantDB(tenant.id);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Get the specific document
-    const document = await db.getDocument(params.documentId);
+    const document = await db.getDocument(documentId);
     if (!document) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
@@ -50,7 +51,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; documentId: string } }
+  { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -63,17 +64,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
     }
 
+    const { id, documentId } = await params;
     const db = createTenantDB(tenant.id);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
-    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === params.id);
+    const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
     // Delete the document
-    await db.deleteDocument(params.documentId);
+    await db.deleteDocument(documentId);
 
     return NextResponse.json({
       success: true,
