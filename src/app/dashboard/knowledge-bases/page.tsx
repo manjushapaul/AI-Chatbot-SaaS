@@ -13,7 +13,14 @@ interface KnowledgeBase {
   description?: string;
   status: string;
   createdAt: string;
-  bot: {
+  updatedAt: string;
+  botId: string;
+  bots?: {
+    id: string;
+    name: string;
+  };
+  bot?: {
+    id: string;
     name: string;
   };
   documents: Array<{
@@ -171,7 +178,7 @@ export default function KnowledgeBasesPage() {
                 name={kb.name}
                 description={kb.description}
                 status={kb.status}
-                linkedBots={kb.bot.name}
+                linkedBots={(kb.bots || kb.bot)?.name || 'No bot'}
                 documentCount={kb.documents.length}
                 onDelete={handleDeleteKnowledgeBase}
               />

@@ -1,26 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { prisma } from './lib/db';
+
+// Protected paths that require authentication
+const PROTECTED_PATHS = ['/dashboard'];
+
+// Public paths that should always be accessible even if trial expired
+const PUBLIC_PATHS = ['/', '/pricing', '/auth', '/billing/expired'];
 
 export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
   
-  // Skip middleware for static files and API routes
+  // Skip middleware for favicon first (before any other processing)
+  if (pathname === '/favicon.ico' || pathname.startsWith('/favicon.ico')) {
+    return NextResponse.next();
+  }
+  
+  // Skip middleware for static files, API routes (except auth), and public routes
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
+    pathname.startsWith('/api/auth') ||
     pathname.startsWith('/static') ||
     pathname.includes('.')
   ) {
-    return NextResponse.next();
+    // Continue with tenant extraction for these routes
+    return await handleTenantExtraction(request, host);
   }
 
+  // Check if path is public (always accessible)
+  const isPublic = PUBLIC_PATHS.some((path) =>
+    pathname === path || pathname.startsWith(path + '/')
+  );
+
+  // Check if path is protected
+  const isProtected = PROTECTED_PATHS.some((path) =>
+    pathname === path || pathname.startsWith(path + '/')
+  );
+
+  if (isProtected) {
+    // Get NextAuth session token
+    const token = await getToken({ 
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET 
+    });
+
+    if (!token) {
+      // No session found, redirect to sign-in with redirect parameter
+      const signInPath = '/auth/signin';
+      const signInUrl = new URL(signInPath, request.url);
+      signInUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(signInUrl);
+    }
+
+    // Check trial expiration for authenticated users
+    if (token.tenantId && !isPublic) {
+      try {
+        const subscription = await prisma.subscriptions.findUnique({
+          where: { tenantId: token.tenantId as string }
+        });
+
+        if (subscription) {
+          const now = new Date();
+          const isExpired = subscription.trialEndsAt && subscription.trialEndsAt <= now;
+          
+          console.log('[Middleware] Trial check:', {
+            tenantId: token.tenantId,
+            status: subscription.status,
+            trialEndsAt: subscription.trialEndsAt,
+            isTrialExpired: subscription.isTrialExpired,
+            isExpired,
+            pathname
+          });
+          
+          // Update isTrialExpired flag if needed
+          if (isExpired && !subscription.isTrialExpired) {
+            await prisma.subscriptions.update({
+              where: { id: subscription.id },
+              data: { isTrialExpired: true }
+            });
+          }
+
+          // Redirect to expired page if trial expired and status is TRIALING
+          if (isExpired && subscription.status === 'TRIALING' && pathname !== '/billing/expired') {
+            console.log('[Middleware] Redirecting to /billing/expired');
+            const expiredUrl = new URL('/billing/expired', request.url);
+            return NextResponse.redirect(expiredUrl);
+          }
+        } else {
+          console.log('[Middleware] No subscription found for tenantId:', token.tenantId);
+        }
+      } catch (error) {
+        console.error('[Middleware] Error checking trial expiration:', error);
+        // Continue if check fails - don't block access
+      }
+    } else {
+      console.log('[Middleware] Skipping trial check:', { 
+        hasTenantId: !!token.tenantId, 
+        isPublic, 
+        pathname 
+      });
+    }
+  }
+
+  // Continue with tenant extraction for authenticated or public routes
+  return await handleTenantExtraction(request, host);
+}
+
+async function handleTenantExtraction(request: NextRequest, host: string) {
+
   // Extract tenant from subdomain or custom domain
-  const tenant = await extractTenantFromHost(host);
+  let tenant;
+  try {
+    tenant = await extractTenantFromHost(host);
+  } catch (error) {
+    console.error('Error in middleware extractTenantFromHost:', error);
+    // If tenant extraction fails, allow the request to proceed
+    return NextResponse.next();
+  }
   
   if (!tenant) {
-    // Redirect to main platform if no tenant found
-    if (host !== process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '')) {
-      return NextResponse.redirect(new URL('/', request.url));
+    // For localhost development, allow requests to proceed without tenant
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      return NextResponse.next();
+    }
+    
+    // Redirect to main platform if no tenant found (production only)
+    try {
+      const nextAuthUrl = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '');
+      if (nextAuthUrl && host !== nextAuthUrl) {
+        const redirectUrl = new URL('/', request.url);
+        return NextResponse.redirect(redirectUrl);
+      }
+    } catch (redirectError) {
+      console.error('Error creating redirect URL:', redirectError);
+      // If redirect fails, just allow the request to proceed
     }
     return NextResponse.next();
   }
@@ -46,18 +159,10 @@ export async function middleware(request: NextRequest) {
 
 async function extractTenantFromHost(host: string): Promise<{ id: string; subdomain: string } | null> {
   try {
-    // Handle localhost development
-    if (host.includes('localhost')) {
-      const subdomain = host.split('.')[0];
-      if (subdomain === 'localhost' || subdomain === '127') {
-        return null; // Main platform
-      }
-      
-      // For development, you might want to hardcode a tenant
-      return {
-        id: 'dev-tenant-id',
-        subdomain: subdomain
-      };
+    // Handle localhost development - don't set tenant from host
+    // Let the session-based tenant context handle it instead
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      return null; // Let getTenantContext use session instead
     }
 
     // Extract subdomain from production host
@@ -96,11 +201,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api/auth (NextAuth API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - files with extensions (static assets)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|.*\\..*).*)',
   ],
 }; 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, Mail, Lock, Building } from 'lucide-react';
 import { typography } from '@/lib/design-tokens';
 
@@ -18,6 +18,8 @@ export function SignInForm({ tenant, onSwitchToSignUp }: SignInFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +32,15 @@ export function SignInForm({ tenant, onSwitchToSignUp }: SignInFormProps) {
         password,
         tenant: tenantSubdomain,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
         setError('Invalid credentials or tenant not found');
       } else {
-        router.push('/dashboard');
+        // Redirect to the originally requested URL or dashboard
+        router.push(callbackUrl);
+        router.refresh();
       }
     } catch (error) {
       setError('An unexpected error occurred');

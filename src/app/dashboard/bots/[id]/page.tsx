@@ -32,20 +32,27 @@ export default function BotDetailPage() {
     const fetchBot = async () => {
       try {
         setIsLoading(true);
+        console.log('[Bot Detail] Fetching bot:', botId);
+        
         const response = await fetch(`/api/bots/${botId}`);
+        console.log('[Bot Detail] Response status:', response.status);
         
         if (response.ok) {
           const result = await response.json();
+          console.log('[Bot Detail] Response data:', result);
+          
           if (result.success) {
             setBot(result.data);
           } else {
             setError(result.error || 'Failed to fetch bot');
           }
         } else {
-          setError('Bot not found');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[Bot Detail] Error response:', errorData);
+          setError(errorData.error || 'Bot not found or you don\'t have access to it');
         }
       } catch (error) {
-        console.error('Error fetching bot:', error);
+        console.error('[Bot Detail] Error fetching bot:', error);
         setError('Failed to fetch bot');
       } finally {
         setIsLoading(false);
@@ -75,17 +82,27 @@ export default function BotDetailPage() {
     return (
       <div className="min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
             <strong>Error:</strong> {error || 'Bot not found'}
           </div>
-          <div className="mt-4">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 text-sm">
+            <strong>💡 Tip:</strong> If you see this error, you might be signed in with the wrong account. 
+            Make sure you're logged in with the account that owns this bot.
+          </div>
+          <div className="mt-4 flex gap-3">
             <Link 
               href="/dashboard/bots"
               className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
-              <ArrowLeft className="w-4 h-4 mr-2 text-accent-strong" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Bots
             </Link>
+            <button
+              onClick={() => window.location.href = '/auth/signin'}
+              className="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+            >
+              Switch Account
+            </button>
           </div>
         </div>
       </div>
@@ -110,10 +127,13 @@ export default function BotDetailPage() {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="inline-flex items-center px-4 py-2 bg-accent-soft text-white rounded-full hover:bg-accent-soft/80 transition-colors text-sm font-medium">
+            <Link
+              href={`/dashboard/bots/${botId}/edit`}
+              className="inline-flex items-center px-4 py-2 bg-accent-soft text-white rounded-full hover:bg-accent-soft/80 transition-colors text-sm font-medium"
+            >
               <Edit className="w-4 h-4 mr-2 text-white" />
               Edit Bot
-            </button>
+            </Link>
             <button className="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-full transition-colors text-sm font-medium">
               <Trash2 className="w-4 h-4 mr-2 text-gray-600" />
               Delete Bot

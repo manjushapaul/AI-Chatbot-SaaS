@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './db';
 import bcrypt from 'bcryptjs';
 
@@ -68,6 +69,23 @@ function recordSuccessfulLogin(email: string): void {
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Google OAuth Provider (only if credentials are provided)
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: {
+              params: {
+                prompt: 'consent',
+                access_type: 'offline',
+                response_type: 'code',
+              },
+            },
+          }),
+        ]
+      : []),
+    // Credentials Provider (Email/Password)
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -102,7 +120,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Get tenant by subdomain
-          const tenantRecord = await prisma.tenant.findUnique({
+          const tenantRecord = await (prisma as any).tenants.findUnique({
             where: { subdomain: tenant },
             include: { users: true }
           });
@@ -118,14 +136,14 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Find user in the specific tenant
-          const user = await prisma.user.findFirst({
+          const user = await (prisma as any).users.findFirst({
             where: {
               email: email.toLowerCase(),
               tenantId: tenantRecord.id,
               status: 'ACTIVE'
             },
             include: {
-              tenant: true
+              tenants: true
             }
           });
 
@@ -151,7 +169,7 @@ export const authOptions: NextAuthOptions = {
 
           // Update last login (optional - you can add this field to your schema)
           try {
-            await prisma.user.update({
+            await (prisma as any).users.update({
               where: { id: user.id },
               data: { updatedAt: new Date() }
             });
@@ -166,7 +184,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             tenantId: user.tenantId,
-            tenant: user.tenant
+            tenant: user.tenants
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -184,13 +202,72 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async signIn({ user, account, profile }) {
+      // Handle Google OAuth sign-in
+      if (account?.provider === 'google') {
+        try {
+          const email = user.email?.toLowerCase();
+          if (!email) return false;
+
+          // Try to find existing user by email
+          const existingUser = await (prisma as any).users.findFirst({
+            where: { email },
+            include: { tenants: true },
+          });
+
+          if (existingUser && existingUser.status === 'ACTIVE') {
+            // Update user info from Google
+            await (prisma as any).users.update({
+              where: { id: existingUser.id },
+              data: {
+                name: user.name || existingUser.name,
+                updatedAt: new Date(),
+              },
+            });
+            return true;
+          }
+
+          // For new Google users, you might want to create them or redirect to signup
+          // For now, we'll allow sign-in if user exists
+          return !!existingUser;
+        } catch (error) {
+          console.error('Google sign-in error:', error);
+          return false;
+        }
+      }
+
+      // Allow credentials provider
+      return true;
+    },
+    async jwt({ token, user, account, trigger, session }) {
+      // Initial sign-in
       if (user) {
-        token.role = user.role;
-        token.tenantId = user.tenantId;
-        token.tenant = user.tenant;
-        token.email = user.email;
-        token.name = user.name;
+        // For Google OAuth, fetch user from database
+        if (account?.provider === 'google' && user.email) {
+          try {
+            const dbUser = await (prisma as any).users.findFirst({
+              where: { email: user.email.toLowerCase() },
+              include: { tenants: true },
+            });
+
+            if (dbUser) {
+              token.role = dbUser.role;
+              token.tenantId = dbUser.tenantId;
+              token.tenant = dbUser.tenants;
+              token.email = dbUser.email;
+              token.name = dbUser.name;
+            }
+          } catch (error) {
+            console.error('Error fetching user for JWT:', error);
+          }
+        } else {
+          // Credentials provider
+          token.role = user.role;
+          token.tenantId = user.tenantId;
+          token.tenant = user.tenant;
+          token.email = user.email;
+          token.name = user.name;
+        }
       }
 
       // Handle session updates

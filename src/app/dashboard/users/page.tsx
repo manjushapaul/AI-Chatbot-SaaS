@@ -311,7 +311,7 @@ export default function UsersPage() {
   const getRolePill = (role: string) => {
     if (role === 'TENANT_ADMIN') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-medium text-[#BE185D]">
+        <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-medium text-amber-700">
           {roleLabels[role as keyof typeof roleLabels]}
         </span>
       );
@@ -402,7 +402,7 @@ export default function UsersPage() {
                 <p className={typography.sectionTitle}>Admins</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.admins || 0}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-6 h-6 text-gray-700" />
               </div>
             </div>

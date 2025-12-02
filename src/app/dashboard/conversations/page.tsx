@@ -211,7 +211,7 @@ export default function ConversationsPage() {
                 <p className={typography.sectionTitle}>Total Messages</p>
                 <p className="text-2xl font-bold text-gray-900">{totalMessages}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-gray-700" />
               </div>
             </div>

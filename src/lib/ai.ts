@@ -53,13 +53,44 @@ interface Bot {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  config?: {
+    systemPrompt?: string;
+    [key: string]: unknown;
+  };
 }
 
 export class AIService {
   private tenantDB: ReturnType<typeof createTenantDB>;
+  // GPT-3.5-turbo context limit
+  private readonly MAX_CONTEXT_TOKENS = 16385;
+  // Reserve tokens for system prompt overhead and response
+  private readonly RESERVED_TOKENS = 2000;
+  // Rough estimate: ~4 characters per token
+  private readonly CHARS_PER_TOKEN = 4;
 
   constructor(tenantId: string) {
     this.tenantDB = createTenantDB(tenantId);
+  }
+
+  /**
+   * Estimate token count from text (rough approximation)
+   */
+  private estimateTokens(text: string): number {
+    // Rough estimate: ~4 characters per token, with some overhead for formatting
+    return Math.ceil(text.length / this.CHARS_PER_TOKEN);
+  }
+
+  /**
+   * Truncate text to fit within token limit
+   */
+  private truncateToTokens(text: string, maxTokens: number): string {
+    const estimatedTokens = this.estimateTokens(text);
+    if (estimatedTokens <= maxTokens) {
+      return text;
+    }
+    // Truncate to approximately maxTokens
+    const maxChars = maxTokens * this.CHARS_PER_TOKEN;
+    return text.substring(0, maxChars) + '...';
   }
 
   async chat(
@@ -67,6 +98,8 @@ export class AIService {
     conversationId: string,
     botId: string
   ): Promise<ChatResponse> {
+    let adjustedMaxTokens = 1000; // Default value
+    
     try {
       // Get conversation history
       const conversation = await this.tenantDB.getConversation(conversationId);
@@ -82,31 +115,95 @@ export class AIService {
 
       // Get relevant knowledge base content using RAG
       const relevantContent = await this.getRelevantContent(message, botId);
+      console.log(`[AIService.chat] Retrieved ${relevantContent.length} relevant content items for query: "${message}"`);
+      
+      if (relevantContent.length === 0) {
+        console.warn(`[AIService.chat] No relevant content found for bot ${botId}. Checking knowledge bases...`);
+        const allKBs = await this.tenantDB.getKnowledgeBases(botId);
+        console.log(`[AIService.chat] Bot ${botId} has ${allKBs?.length || 0} knowledge bases`);
+        if (allKBs && allKBs.length > 0) {
+          allKBs.forEach((kb: { id: string; name: string; documents?: unknown[]; faqs?: unknown[] }) => {
+            console.log(`[AIService.chat] KB "${kb.name}" (${kb.id}): ${kb.documents?.length || 0} docs, ${kb.faqs?.length || 0} FAQs`);
+          });
+        }
+      }
 
       // Build system prompt with bot personality and knowledge
-      const systemPrompt = this.buildSystemPrompt(bot, relevantContent);
+      let systemPrompt = this.buildSystemPrompt(bot, relevantContent);
+      
+      // Get conversation history and prepare messages
+      const conversationMessages = (conversation.messages || []).map((msg: { role: string; content: string }) => {
+        // Convert database role format (USER/ASSISTANT) to OpenAI format (user/assistant)
+        let role: 'user' | 'assistant' | 'system' = 'user';
+        if (msg.role === 'USER') {
+          role = 'user';
+        } else if (msg.role === 'ASSISTANT') {
+          role = 'assistant';
+        } else if (msg.role === 'SYSTEM') {
+          role = 'system';
+        } else {
+          // Handle lowercase or other formats
+          role = msg.role.toLowerCase() as 'user' | 'assistant' | 'system';
+        }
+        return {
+          role,
+          content: msg.content || '',
+        };
+      });
 
-      // Prepare conversation messages
+      // Calculate available tokens for messages
+      const requestedMaxTokens = bot.maxTokens || 1000;
+      const userMessageTokens = this.estimateTokens(message);
+      
+      // Reserve tokens for: system prompt, user message, maxTokens for response, and overhead
+      const availableTokensForHistory = this.MAX_CONTEXT_TOKENS - this.RESERVED_TOKENS - requestedMaxTokens - userMessageTokens;
+      
+      // Truncate system prompt if needed (limit to ~4000 tokens)
+      const systemPromptTokens = this.estimateTokens(systemPrompt);
+      const maxSystemPromptTokens = 4000;
+      if (systemPromptTokens > maxSystemPromptTokens) {
+        systemPrompt = this.truncateToTokens(systemPrompt, maxSystemPromptTokens);
+        console.warn(`System prompt truncated from ${systemPromptTokens} to ~${maxSystemPromptTokens} tokens`);
+      }
+      
+      // Truncate conversation history if needed
+      const truncatedHistory: ChatMessage[] = [];
+      let historyTokens = 0;
+      
+      // Process messages in reverse order (most recent first) to keep recent context
+      const reversedMessages = [...conversationMessages].reverse();
+      for (const msg of reversedMessages) {
+        const msgTokens = this.estimateTokens(msg.content);
+        if (historyTokens + msgTokens <= availableTokensForHistory) {
+          truncatedHistory.unshift(msg); // Add to beginning to maintain order
+          historyTokens += msgTokens;
+        } else {
+          // If we can't fit this message, stop
+          break;
+        }
+      }
+      
+      if (conversationMessages.length > truncatedHistory.length) {
+        console.warn(`Conversation history truncated from ${conversationMessages.length} to ${truncatedHistory.length} messages`);
+      }
+
+      // Calculate actual available tokens for response
+      const systemTokens = this.estimateTokens(systemPrompt);
+      const historyTokensTotal = truncatedHistory.reduce((sum, msg) => sum + this.estimateTokens(msg.content), 0);
+      const totalInputTokens = systemTokens + historyTokensTotal + userMessageTokens;
+      const availableForResponse = this.MAX_CONTEXT_TOKENS - totalInputTokens - 100; // 100 token buffer
+      
+      // Adjust maxTokens to fit within context limit
+      adjustedMaxTokens = Math.min(requestedMaxTokens, Math.max(100, availableForResponse));
+      
+      if (adjustedMaxTokens < requestedMaxTokens) {
+        console.warn(`Max tokens adjusted from ${requestedMaxTokens} to ${adjustedMaxTokens} to fit within context limit`);
+      }
+
+      // Prepare final messages array
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
-        ...(conversation.messages || []).map((msg: { role: string; content: string }) => {
-          // Convert database role format (USER/ASSISTANT) to OpenAI format (user/assistant)
-          let role: 'user' | 'assistant' | 'system' = 'user';
-          if (msg.role === 'USER') {
-            role = 'user';
-          } else if (msg.role === 'ASSISTANT') {
-            role = 'assistant';
-          } else if (msg.role === 'SYSTEM') {
-            role = 'system';
-          } else {
-            // Handle lowercase or other formats
-            role = msg.role.toLowerCase() as 'user' | 'assistant' | 'system';
-          }
-          return {
-            role,
-            content: msg.content || '',
-          };
-        }),
+        ...truncatedHistory,
         { role: 'user', content: message },
       ];
 
@@ -146,12 +243,12 @@ export class AIService {
         };
       }
 
-      // Call OpenAI API
+      // Call OpenAI API with adjusted maxTokens
       const completion = await openai.chat.completions.create({
         model: bot.model || 'gpt-3.5-turbo',
         messages,
         temperature: bot.temperature || 0.7,
-        max_tokens: bot.maxTokens || 1000,
+        max_tokens: adjustedMaxTokens,
         stream: false,
       });
 
@@ -248,72 +345,178 @@ export class AIService {
 
   private async getRelevantContent(query: string, botId: string): Promise<Array<{ title: string; content: string; relevance: number }>> {
     try {
+      console.log(`[getRelevantContent] Searching for: "${query}" in bot: ${botId}`);
+      
       // Get all knowledge bases for the bot
       const knowledgeBases = await this.tenantDB.getKnowledgeBases(botId);
       
+      console.log(`[getRelevantContent] Found ${knowledgeBases?.length || 0} knowledge bases for bot ${botId}`);
+      
       if (!knowledgeBases || !knowledgeBases.length) {
+        console.warn(`[getRelevantContent] No knowledge bases found for bot ${botId}`);
         return [];
       }
 
-      // For now, we'll do a simple text search
-      // In production, you'd use vector embeddings and semantic search
+      // Collect all documents and FAQs from all knowledge bases
       const allDocuments: Document[] = [];
       const allFaqs: FAQ[] = [];
 
-      knowledgeBases.forEach((kb: { documents?: Array<{ content?: string; [key: string]: unknown }>; faqs?: Array<{ answer?: string; [key: string]: unknown }>; [key: string]: unknown }) => {
-        // Safely handle documents and faqs arrays
+      knowledgeBases.forEach((kb: { 
+        id: string;
+        name: string;
+        documents?: Array<{ 
+          id?: string;
+          title?: string;
+          content?: string; 
+          status?: string;
+          [key: string]: unknown 
+        }>; 
+        faqs?: Array<{ 
+          id?: string;
+          question?: string;
+          answer?: string; 
+          status?: string;
+          [key: string]: unknown 
+        }>; 
+        [key: string]: unknown 
+      }) => {
+        console.log(`[getRelevantContent] KB "${kb.name}" (${kb.id}): ${kb.documents?.length || 0} docs, ${kb.faqs?.length || 0} FAQs`);
+        
+        // Safely handle documents - only include ACTIVE documents with content
         if (kb.documents && Array.isArray(kb.documents)) {
-          allDocuments.push(...kb.documents.filter((doc: { content?: string; [key: string]: unknown }) => doc && doc.content));
+          const activeDocs = kb.documents.filter((doc: { 
+            content?: string; 
+            status?: string;
+            [key: string]: unknown 
+          }) => {
+            const hasContent = doc && doc.content && doc.content.trim().length > 0;
+            const isActive = doc.status === 'ACTIVE' || doc.status === undefined; // Default to active if status not set
+            if (!hasContent) {
+              console.warn(`[getRelevantContent] Document ${doc.id || 'unknown'} has no content`);
+            }
+            return hasContent && isActive;
+          });
+          allDocuments.push(...activeDocs as Document[]);
+          console.log(`[getRelevantContent] Added ${activeDocs.length} active documents from KB "${kb.name}"`);
         }
+        
+        // Safely handle FAQs - only include ACTIVE FAQs with answers
         if (kb.faqs && Array.isArray(kb.faqs)) {
-          allFaqs.push(...kb.faqs.filter((faq: { answer?: string; [key: string]: unknown }) => faq && faq.answer));
+          const activeFaqs = kb.faqs.filter((faq: { 
+            answer?: string; 
+            status?: string;
+            [key: string]: unknown 
+          }) => {
+            const hasAnswer = faq && faq.answer && faq.answer.trim().length > 0;
+            const isActive = faq.status === 'ACTIVE' || faq.status === undefined;
+            return hasAnswer && isActive;
+          });
+          allFaqs.push(...activeFaqs as FAQ[]);
+          console.log(`[getRelevantContent] Added ${activeFaqs.length} active FAQs from KB "${kb.name}"`);
         }
       });
 
-      // Simple keyword matching (replace with vector search in production)
-      const relevantDocs = allDocuments.filter(doc => 
-        doc.content.toLowerCase().includes(query.toLowerCase()) ||
-        doc.title.toLowerCase().includes(query.toLowerCase())
-      );
+      console.log(`[getRelevantContent] Total: ${allDocuments.length} documents, ${allFaqs.length} FAQs`);
 
-      const relevantFaqs = allFaqs.filter(faq =>
-        faq.question.toLowerCase().includes(query.toLowerCase()) ||
-        faq.answer.toLowerCase().includes(query.toLowerCase())
-      );
-
-      // Combine and rank results
-      const results = [...relevantDocs, ...relevantFaqs];
+      // Normalize query for better matching (remove special chars, handle variations)
+      const normalizedQuery = query.toLowerCase()
+        .replace(/[^\w\s]/g, ' ') // Replace special chars with spaces
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .trim();
       
-      // Sort by relevance (simple scoring for now)
+      const queryWords = normalizedQuery.split(' ').filter(w => w.length > 0);
+
+      // Improved search: check for keyword matches, partial matches, and related terms
+      const relevantDocs = allDocuments.filter(doc => {
+        if (!doc.content || !doc.title) return false;
+        
+        const docText = `${doc.title} ${doc.content}`.toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .replace(/\s+/g, ' ');
+        
+        // Check if any query word appears in the document
+        return queryWords.some(word => {
+          if (word.length < 2) return false;
+          return docText.includes(word) || 
+                 doc.title.toLowerCase().includes(word);
+        });
+      });
+
+      const relevantFaqs = allFaqs.filter(faq => {
+        if (!faq.question || !faq.answer) return false;
+        
+        const faqText = `${faq.question} ${faq.answer}`.toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .replace(/\s+/g, ' ');
+        
+        return queryWords.some(word => {
+          if (word.length < 2) return false;
+          return faqText.includes(word);
+        });
+      });
+
+      console.log(`[getRelevantContent] Found ${relevantDocs.length} relevant docs, ${relevantFaqs.length} relevant FAQs`);
+
+      // If no exact matches, return all content (fallback) - at least give the bot something to work with
+      const results = relevantDocs.length > 0 || relevantFaqs.length > 0
+        ? [...relevantDocs, ...relevantFaqs]
+        : [...allDocuments.slice(0, 3), ...allFaqs.slice(0, 2)]; // Fallback: return first few items
+      
+      // Sort by relevance score
       results.sort((a, b) => {
-        const aScore = this.calculateRelevanceScore(query, a);
-        const bScore = this.calculateRelevanceScore(query, b);
+        const aScore = this.calculateRelevanceScore(normalizedQuery, a);
+        const bScore = this.calculateRelevanceScore(normalizedQuery, b);
         return bScore - aScore;
       });
 
-      // Map to the expected return type with calculated relevance scores
-      return results.slice(0, 5).map(item => ({
-        title: 'title' in item ? item.title : item.question,
-        content: 'content' in item ? item.content : item.answer,
-        relevance: this.calculateRelevanceScore(query, item)
+      const finalResults = results.slice(0, 5).map(item => ({
+        title: 'title' in item ? (item.title || 'Untitled') : (item.question || 'FAQ'),
+        content: 'content' in item ? (item.content || '') : (item.answer || ''),
+        relevance: this.calculateRelevanceScore(normalizedQuery, item)
       }));
+
+      console.log(`[getRelevantContent] Returning ${finalResults.length} results`);
+      return finalResults;
     } catch (error) {
-      console.error('Error getting relevant content:', error);
+      console.error('[getRelevantContent] Error getting relevant content:', error);
+      if (error instanceof Error) {
+        console.error('[getRelevantContent] Error details:', error.message, error.stack);
+      }
       return [];
     }
   }
 
   private calculateRelevanceScore(query: string, content: { title?: string; content?: string; question?: string; answer?: string }): number {
-    const queryWords = query.toLowerCase().split(' ');
-    const contentText = `${content.title || ''} ${content.content || ''} ${content.question || ''} ${content.answer || ''}`.toLowerCase();
+    const queryWords = query.toLowerCase().split(' ').filter(w => w.length > 0);
+    const contentText = `${content.title || ''} ${content.content || ''} ${content.question || ''} ${content.answer || ''}`
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ');
     
     let score = 0;
     queryWords.forEach(word => {
+      if (word.length < 2) return;
+      
+      // Check title first (higher weight)
+      const titleText = (content.title || '').toLowerCase();
+      if (titleText.includes(word)) {
+        score += 3; // Title matches are very important
+      }
+      
+      // Check question (for FAQs)
+      const questionText = (content.question || '').toLowerCase();
+      if (questionText.includes(word)) {
+        score += 2; // Question matches are important
+      }
+      
+      // Check content/answer
       if (contentText.includes(word)) {
         score += 1;
-        // Bonus for exact matches
-        if (contentText.includes(word)) {
-          score += 0.5;
+        
+        // Bonus for multiple occurrences
+        const occurrences = (contentText.match(new RegExp(word, 'g')) || []).length;
+        if (occurrences > 1) {
+          score += 0.5 * (occurrences - 1);
         }
       }
     });
@@ -325,23 +528,23 @@ export class AIService {
     // Generate a helpful mock response based on the bot's personality and knowledge
     const lowerMessage = message.toLowerCase();
     
-    // Check if there's relevant content
+    // Check if there's relevant content from knowledge base
     if (relevantContent.length > 0) {
       const firstContent = relevantContent[0];
-      return `Based on the information I have, ${firstContent.content.substring(0, 200)}${firstContent.content.length > 200 ? '...' : ''}\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
+      return `Based on the information in my knowledge base: ${firstContent.content.substring(0, 200)}${firstContent.content.length > 200 ? '...' : ''}\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
     }
     
-    // Generate contextual responses based on common queries
+    // If no knowledge base content, inform user we can only answer based on KB
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-      return `Hello! I'm ${bot.name}. ${bot.personality ? bot.personality.substring(0, 150) : 'I\'m here to help you with any questions you might have.'}\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
+      return `Hello! I'm ${bot.name}. I can only answer questions based on the information in my knowledge base. Currently, I don't have any information available.\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
     }
     
     if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {
-      return `I'm ${bot.name}, and I can help you with various questions and tasks. ${bot.personality || 'Feel free to ask me anything!'}\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
+      return `I'm ${bot.name}. I can only answer questions based on the information in my knowledge base. Currently, I don't have any information available.\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY for real AI responses.]`;
     }
     
-    // Default response
-    return `Thank you for your message: "${message}". As ${bot.name}, I understand you're asking about this topic. ${bot.personality ? `Following my personality: ${bot.personality.substring(0, 100)}` : 'I\'m here to help!'}\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY in your .env file for real AI responses.]`;
+    // Default response - only answer from knowledge base
+    return `I can only answer questions based on the information in my knowledge base. I don't have information about that topic.\n\n[Note: This is a mock response. Please configure OPENAI_API_KEY in your .env file for real AI responses.]`;
   }
 
   private buildSystemPrompt(bot: Bot, relevantContent: Array<{ title: string; content: string; relevance: number }>): string {
@@ -351,19 +554,29 @@ export class AIService {
       prompt += `\n\nPersonality: ${bot.personality}`;
     }
 
+    // Check if bot has a custom system prompt in config
+    if (bot.config?.systemPrompt) {
+      prompt += `\n\n${bot.config.systemPrompt}`;
+    }
+
     if (relevantContent.length > 0) {
-      prompt += `\n\nUse the following information to answer questions accurately:\n\n`;
+      prompt += `\n\nIMPORTANT: You MUST ONLY use the following information from the Knowledge Base to answer questions. Do NOT use any information outside of what is provided below:\n\n`;
       relevantContent.forEach((content, index) => {
         prompt += `${index + 1}. ${content.title || 'Information'}: ${content.content}\n\n`;
       });
-    }
-
-    prompt += `\n\nInstructions:
-- Always be helpful, accurate, and friendly
-- Use the provided information when available
-- If you don't know something, say so rather than making things up
+      
+      prompt += `\n\nCRITICAL RULES:
+- You MUST ONLY answer questions based on the information provided above from the Knowledge Base (FAQs and documents)
+- If a question cannot be answered using the provided information, politely decline and say: "I can only answer questions based on the information in my knowledge base. I don't have information about that topic."
+- DO NOT make up information, speculate, or use knowledge from outside the provided content
+- DO NOT answer questions about topics not covered in the Knowledge Base
+- If the provided information doesn't contain enough detail to answer a question, say so clearly
 - Keep responses concise but informative
 - Maintain the personality and tone specified above`;
+    } else {
+      // No knowledge base content available
+      prompt += `\n\nIMPORTANT: You do not have access to any Knowledge Base content. You should politely inform users that you can only answer questions based on information in your knowledge base, and currently no information is available.`;
+    }
 
     return prompt;
   }
@@ -372,7 +585,7 @@ export class AIService {
   async processDocument(
     content: string,
     title: string,
-    type: 'PDF' | 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON',
+    type: 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON',
     knowledgeBaseId: string
   ): Promise<void> {
     try {

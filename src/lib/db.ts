@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -16,10 +16,10 @@ export class TenantDB {
 
   // Bot operations
   async getBots() {
-    return prisma.bot.findMany({
+    return (prisma as any).bots.findMany({
       where: { tenantId: this.tenantId },
       include: {
-        knowledgeBases: true,
+        knowledge_bases: true,
         widgets: true,
         _count: {
           select: {
@@ -31,10 +31,10 @@ export class TenantDB {
   }
 
   async getBot(id: string) {
-    return prisma.bot.findFirst({
+    return (prisma as any).bots.findFirst({
       where: { id, tenantId: this.tenantId },
       include: {
-        knowledgeBases: {
+        knowledge_bases: {
           include: {
             documents: true,
             faqs: true,
@@ -59,12 +59,20 @@ export class TenantDB {
     console.log('Tenant ID:', this.tenantId);
     
     try {
-      const bot = await prisma.bot.create({
+      // Generate a unique ID for the bot
+      const { randomUUID } = require('crypto');
+      const botId = randomUUID().replace(/-/g, '');
+      const now = new Date();
+      
+      const bot = await (prisma as any).bots.create({
         data: {
+          id: botId,
           ...data,
           tenantId: this.tenantId,
           // Ensure status is properly set
           status: data.status || 'ACTIVE',
+          createdAt: now,
+          updatedAt: now,
         },
       });
       
@@ -85,34 +93,80 @@ export class TenantDB {
     temperature: number;
     maxTokens: number;
     status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DELETED';
+    config?: Prisma.InputJsonValue | null;
   }>) {
-    return prisma.bot.update({
+    // Build the update data object using Prisma's generated types
+    const updateData: Prisma.BotUpdateInput = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.avatar !== undefined) updateData.avatar = data.avatar;
+    if (data.personality !== undefined) updateData.personality = data.personality;
+    if (data.model !== undefined) updateData.model = data.model;
+    if (data.temperature !== undefined) updateData.temperature = data.temperature;
+    if (data.maxTokens !== undefined) updateData.maxTokens = data.maxTokens;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.config !== undefined) {
+      // Convert config to Prisma Json type
+      updateData.config = data.config as Prisma.InputJsonValue;
+    }
+
+    return (prisma as any).bots.update({
       where: { id, tenantId: this.tenantId },
-      data,
+      data: updateData,
     });
   }
 
   async deleteBot(id: string) {
-    return prisma.bot.delete({
+    return (prisma as any).bots.delete({
       where: { id, tenantId: this.tenantId },
     });
   }
 
   // Knowledge base operations
   async getKnowledgeBases(botId?: string) {
-    return prisma.knowledgeBase.findMany({
+    const knowledgeBases = await (prisma as any).knowledge_bases.findMany({
       where: { 
         tenantId: this.tenantId,
+        status: 'ACTIVE',
         ...(botId && { botId }),
       },
       include: {
-        documents: true,
-        faqs: true,
-        bot: {
-          select: { name: true },
+        documents: {
+          where: {
+            status: 'ACTIVE',
+          },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        },
+        faqs: {
+          where: {
+            status: 'ACTIVE',
+          },
+        },
+        bots: {
+          select: { 
+            id: true,
+            name: true,
+            description: true 
+          },
         },
       },
     });
+    
+    // Debug logging
+    knowledgeBases.forEach(kb => {
+      console.log(`[getKnowledgeBases] KB "${kb.name}" (${kb.id}): ${kb.documents?.length || 0} documents, ${kb.faqs?.length || 0} FAQs`);
+    });
+    
+    return knowledgeBases;
   }
 
   async createKnowledgeBase(data: {
@@ -120,10 +174,17 @@ export class TenantDB {
     description?: string;
     botId: string;
   }) {
-    return prisma.knowledgeBase.create({
+    const { randomUUID } = require('crypto');
+    const kbId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).knowledge_bases.create({
       data: {
+        id: kbId,
         ...data,
         tenantId: this.tenantId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
   }
@@ -132,16 +193,32 @@ export class TenantDB {
     name?: string;
     description?: string;
   }) {
-    return prisma.knowledgeBase.update({
+    return (prisma as any).knowledge_bases.update({
       where: { id, tenantId: this.tenantId },
       data,
     });
   }
 
   async deleteKnowledgeBase(id: string) {
-    return prisma.knowledgeBase.delete({
+    console.log(`[deleteKnowledgeBase] Deleting KB ${id} for tenant ${this.tenantId}`);
+    
+    // First verify the knowledge base exists and belongs to this tenant
+    const kb = await (prisma as any).knowledge_bases.findFirst({
       where: { id, tenantId: this.tenantId },
     });
+    
+    if (!kb) {
+      throw new Error(`Knowledge base ${id} not found or doesn't belong to tenant ${this.tenantId}`);
+    }
+    
+    // Delete the knowledge base (cascade will handle related documents and FAQs)
+    const result = await (prisma as any).knowledge_bases.delete({
+      where: { id, tenantId: this.tenantId },
+    });
+    
+    console.log(`[deleteKnowledgeBase] Successfully deleted KB "${kb.name}" (${id})`);
+    
+    return result;
   }
 
   // FAQ operations
@@ -151,25 +228,28 @@ export class TenantDB {
     category?: string;
     knowledgeBaseId: string;
   }) {
-    return prisma.fAQ.create({
+    const { randomUUID } = require('crypto');
+    const faqId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).faqs.create({
       data: {
+        id: faqId,
         question: data.question,
         answer: data.answer,
         category: data.category,
-        knowledgeBase: {
-          connect: {
-            id: data.knowledgeBaseId,
-          },
-        },
+        knowledgeBaseId: data.knowledgeBaseId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
   }
 
   async getFAQsByKnowledgeBase(knowledgeBaseId: string) {
-    return prisma.fAQ.findMany({
+    return (prisma as any).faqs.findMany({
       where: {
         knowledgeBaseId,
-        knowledgeBase: {
+        knowledge_bases: {
           tenantId: this.tenantId,
         },
       },
@@ -184,14 +264,14 @@ export class TenantDB {
     answer?: string;
     category?: string;
   }) {
-    return prisma.fAQ.update({
+    return (prisma as any).faqs.update({
       where: { id },
       data,
     });
   }
 
   async deleteFAQ(id: string) {
-    return prisma.fAQ.delete({
+    return (prisma as any).faqs.delete({
       where: { id },
     });
   }
@@ -200,32 +280,71 @@ export class TenantDB {
   async addDocument(data: {
     title: string;
     content: string;
-    type: 'PDF' | 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON';
+    type: 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON';
     url?: string;
     knowledgeBaseId: string;
     embeddings?: Record<string, unknown>[];
   }) {
-    return prisma.document.create({
+    console.log(`[addDocument] Creating document "${data.title}" for KB ${data.knowledgeBaseId}, tenant ${this.tenantId}`);
+    
+    // Verify knowledge base exists and belongs to tenant
+    const kb = await (prisma as any).knowledge_bases.findFirst({
+      where: {
+        id: data.knowledgeBaseId,
+        tenantId: this.tenantId,
+      },
+    });
+    
+    if (!kb) {
+      throw new Error(`Knowledge base ${data.knowledgeBaseId} not found or doesn't belong to tenant ${this.tenantId}`);
+    }
+    
+    const { randomUUID } = require('crypto');
+    const docId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    const document = await (prisma as any).documents.create({
       data: {
+        id: docId,
         title: data.title,
         content: data.content,
         type: data.type,
         url: data.url,
         embeddings: data.embeddings,
-        knowledgeBase: {
-          connect: {
-            id: data.knowledgeBaseId,
-          },
-        },
+        status: 'ACTIVE', // Explicitly set status to ACTIVE
+        knowledgeBaseId: data.knowledgeBaseId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
+    
+    console.log(`[addDocument] Document created successfully: ${document.id} for KB ${data.knowledgeBaseId}`);
+    
+    // Verify document was created and can be retrieved
+    const verifyDoc = await (prisma as any).documents.findFirst({
+      where: {
+        id: document.id,
+        knowledgeBaseId: data.knowledgeBaseId,
+      },
+    });
+    
+    if (!verifyDoc) {
+      console.error(`[addDocument] WARNING: Document ${document.id} was created but cannot be retrieved!`);
+    } else {
+      console.log(`[addDocument] Document verified: ${verifyDoc.id}, status: ${verifyDoc.status}`);
+    }
+    
+    return document;
   }
 
   async getDocumentsByKnowledgeBase(knowledgeBaseId: string) {
-    return prisma.document.findMany({
+    console.log(`[getDocumentsByKnowledgeBase] Fetching documents for KB ${knowledgeBaseId}, tenant ${this.tenantId}`);
+    
+    // First, get all documents (including non-ACTIVE) for debugging
+    const allDocs = await (prisma as any).documents.findMany({
       where: {
         knowledgeBaseId,
-        knowledgeBase: {
+        knowledge_bases: {
           tenantId: this.tenantId,
         },
       },
@@ -233,6 +352,28 @@ export class TenantDB {
         id: true,
         title: true,
         type: true,
+        status: true,
+      },
+    });
+    console.log(`[getDocumentsByKnowledgeBase] Found ${allDocs.length} total documents (all statuses)`);
+    allDocs.forEach(doc => {
+      console.log(`[getDocumentsByKnowledgeBase] - ${doc.title}: status=${doc.status || 'NULL'}`);
+    });
+    
+    // Then get only ACTIVE documents
+    const activeDocs = await (prisma as any).documents.findMany({
+      where: {
+        knowledgeBaseId,
+        status: 'ACTIVE', // Only get ACTIVE documents
+        knowledge_bases: {
+          tenantId: this.tenantId,
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        content: true,
         createdAt: true,
         updatedAt: true,
         status: true,
@@ -241,18 +382,21 @@ export class TenantDB {
         createdAt: 'desc',
       },
     });
+    
+    console.log(`[getDocumentsByKnowledgeBase] Returning ${activeDocs.length} ACTIVE documents`);
+    return activeDocs;
   }
 
   async getDocument(id: string) {
-    return prisma.document.findFirst({
+    return (prisma as any).documents.findFirst({
       where: {
         id,
-        knowledgeBase: {
+        knowledge_bases: {
           tenantId: this.tenantId,
         },
       },
       include: {
-        knowledgeBase: {
+        knowledge_bases: {
           select: {
             id: true,
             name: true,
@@ -266,14 +410,14 @@ export class TenantDB {
     title?: string;
     content?: string;
   }) {
-    return prisma.document.update({
+    return (prisma as any).documents.update({
       where: { id },
       data,
     });
   }
 
   async deleteDocument(id: string) {
-    return prisma.document.delete({
+    return (prisma as any).documents.delete({
       where: { id },
     });
   }
@@ -285,23 +429,30 @@ export class TenantDB {
     title?: string;
     metadata?: Record<string, unknown>;
   }) {
-    return prisma.conversation.create({
+    const { randomUUID } = require('crypto');
+    const convId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).conversations.create({
       data: {
+        id: convId,
         tenantId: this.tenantId,
         userId: data.userId,
         botId: data.botId,
         title: data.title,
         metadata: data.metadata,
+        lastMessageAt: now,
+        startedAt: now,
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
             email: true,
           },
         },
-        bot: {
+        bots: {
           select: {
             id: true,
             name: true,
@@ -316,7 +467,7 @@ export class TenantDB {
     botId?: string;
     status?: 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
   }) {
-    return prisma.conversation.findMany({
+    return (prisma as any).conversations.findMany({
       where: {
         tenantId: this.tenantId,
         ...(filters?.userId && { userId: filters.userId }),
@@ -324,14 +475,14 @@ export class TenantDB {
         ...(filters?.status && { status: filters.status }),
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
             email: true,
           },
         },
-        bot: {
+        bots: {
           select: {
             id: true,
             name: true,
@@ -356,20 +507,20 @@ export class TenantDB {
   }
 
   async getConversation(id: string) {
-    return prisma.conversation.findFirst({
+    return (prisma as any).conversations.findFirst({
       where: {
         id,
         tenantId: this.tenantId,
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
             email: true,
           },
         },
-        bot: {
+        bots: {
           select: {
             id: true,
             name: true,
@@ -390,14 +541,14 @@ export class TenantDB {
     metadata?: Record<string, unknown>;
     closedAt?: Date;
   }) {
-    return prisma.conversation.update({
+    return (prisma as any).conversations.update({
       where: { id },
       data,
     });
   }
 
   async closeConversation(id: string) {
-    return prisma.conversation.update({
+    return (prisma as any).conversations.update({
       where: { id },
       data: {
         status: 'CLOSED',
@@ -407,7 +558,7 @@ export class TenantDB {
   }
 
   async deleteConversation(id: string) {
-    return prisma.conversation.delete({
+    return (prisma as any).conversations.delete({
       where: { id },
     });
   }
@@ -423,8 +574,12 @@ export class TenantDB {
     responseTime?: number;
     metadata?: Record<string, unknown>;
   }) {
-    const message = await prisma.message.create({
+    const { randomUUID } = require('crypto');
+    const msgId = randomUUID().replace(/-/g, '');
+    
+    const message = await (prisma as any).messages.create({
       data: {
+        id: msgId,
         conversationId: data.conversationId,
         role: data.role,
         content: data.content,
@@ -462,7 +617,7 @@ export class TenantDB {
       };
     }
 
-    await prisma.conversation.update({
+    await (prisma as any).conversations.update({
       where: { id: data.conversationId },
       data: updateData,
     });
@@ -471,10 +626,10 @@ export class TenantDB {
   }
 
   async getMessages(conversationId: string) {
-    return prisma.message.findMany({
+    return (prisma as any).messages.findMany({
       where: {
         conversationId,
-        conversation: {
+        conversations: {
           tenantId: this.tenantId,
         },
       },
@@ -485,7 +640,7 @@ export class TenantDB {
   }
 
   async getConversationStats(conversationId: string) {
-    const conversation = await prisma.conversation.findFirst({
+    const conversation = await (prisma as any).conversations.findFirst({
       where: {
         id: conversationId,
         tenantId: this.tenantId,
@@ -511,10 +666,21 @@ export class TenantDB {
   }
 
   async getKnowledgeBaseStats(knowledgeBaseId: string) {
-    const documentCount = await prisma.document.count({
+    const documentCount = await (prisma as any).documents.count({
       where: {
         knowledgeBaseId,
-        knowledgeBase: {
+        status: 'ACTIVE', // Only count ACTIVE documents
+        knowledge_bases: {
+          tenantId: this.tenantId,
+        },
+      },
+    });
+
+    const faqCount = await (prisma as any).faqs.count({
+      where: {
+        knowledgeBaseId,
+        status: 'ACTIVE', // Only count ACTIVE FAQs
+        knowledge_bases: {
           tenantId: this.tenantId,
         },
       },
@@ -522,6 +688,7 @@ export class TenantDB {
 
     return {
       documentCount,
+      faqCount,
       totalSize: 0, // Simplified for now
     };
   }
@@ -533,25 +700,32 @@ export class TenantDB {
     config: Record<string, unknown>;
     botId: string;
   }) {
-    return prisma.widget.create({
+    const { randomUUID } = require('crypto');
+    const widgetId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).widgets.create({
       data: {
+        id: widgetId,
         name: data.name,
         type: data.type,
         config: data.config,
         tenantId: this.tenantId,
         botId: data.botId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
   }
 
   async getWidgets(botId?: string) {
-    return prisma.widget.findMany({
+    return (prisma as any).widgets.findMany({
       where: { 
         tenantId: this.tenantId,
         ...(botId && { botId }),
       },
       include: {
-        bot: {
+        bots: {
           select: { name: true },
         },
       },
@@ -559,13 +733,13 @@ export class TenantDB {
   }
 
   async getWidget(id: string) {
-    return prisma.widget.findFirst({
+    return (prisma as any).widgets.findFirst({
       where: { 
         id,
         tenantId: this.tenantId,
       },
       include: {
-        bot: {
+        bots: {
           select: { name: true },
         },
       },
@@ -578,21 +752,21 @@ export class TenantDB {
     config: Record<string, unknown>;
     status: string;
   }>) {
-    return prisma.widget.update({
+    return (prisma as any).widgets.update({
       where: { id, tenantId: this.tenantId },
       data,
     });
   }
 
   async deleteWidget(id: string) {
-    return prisma.widget.delete({
+    return (prisma as any).widgets.delete({
       where: { id, tenantId: this.tenantId },
     });
   }
 
   // User operations
   async getUsers() {
-    return prisma.user.findMany({
+    return (prisma as any).users.findMany({
       where: { tenantId: this.tenantId },
       select: {
         id: true,
@@ -612,13 +786,13 @@ export class TenantDB {
   }
 
   async getUser(id: string) {
-    return prisma.user.findFirst({
+    return (prisma as any).users.findFirst({
       where: { id, tenantId: this.tenantId },
     });
   }
 
   async getUserByEmail(email: string) {
-    return prisma.user.findFirst({
+    return (prisma as any).users.findFirst({
       where: { email, tenantId: this.tenantId },
     });
   }
@@ -631,14 +805,21 @@ export class TenantDB {
     status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
     tenantId: string;
   }) {
-    return prisma.user.create({
+    const { randomUUID } = require('crypto');
+    const userId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).users.create({
       data: {
+        id: userId,
         email: data.email,
         name: data.name,
         password: data.password,
         role: data.role,
         status: data.status,
         tenantId: this.tenantId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
   }
@@ -649,27 +830,27 @@ export class TenantDB {
     status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
     lastActive: Date;
   }>) {
-    return prisma.user.update({
+    return (prisma as any).users.update({
       where: { id, tenantId: this.tenantId },
       data,
     });
   }
 
   async updateUserPassword(id: string, password: string) {
-    return prisma.user.update({
+    return (prisma as any).users.update({
       where: { id, tenantId: this.tenantId },
       data: { password },
     });
   }
 
   async deleteUser(id: string) {
-    return prisma.user.delete({
+    return (prisma as any).users.delete({
       where: { id, tenantId: this.tenantId },
     });
   }
 
   async getConversationCountByUser(userId: string): Promise<number> {
-    const count = await prisma.conversation.count({
+    const count = await (prisma as any).conversations.count({
       where: { 
         userId,
         tenantId: this.tenantId 
@@ -679,7 +860,7 @@ export class TenantDB {
   }
 
   async getApiKeyCountByUser(userId: string): Promise<number> {
-    const count = await prisma.apiKey.count({
+    const count = await (prisma as any).api_keys.count({
       where: { 
         userId,
         tenantId: this.tenantId,
@@ -697,19 +878,26 @@ export class TenantDB {
     userId: string;
     expiresAt?: Date;
   }) {
-    return prisma.apiKey.create({
+    const { randomUUID } = require('crypto');
+    const apiKeyId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    return (prisma as any).api_keys.create({
       data: {
+        id: apiKeyId,
         ...data,
         tenantId: this.tenantId,
+        createdAt: now,
+        updatedAt: now,
       },
     });
   }
 
   async getApiKeys() {
-    return prisma.apiKey.findMany({
+    return (prisma as any).api_keys.findMany({
       where: { tenantId: this.tenantId },
       include: {
-        user: {
+        users: {
           select: { name: true, email: true },
         },
       },
@@ -717,7 +905,7 @@ export class TenantDB {
   }
 
   async validateApiKey(key: string) {
-    return prisma.apiKey.findFirst({
+    return (prisma as any).api_keys.findFirst({
       where: { 
         key,
         tenantId: this.tenantId,
@@ -728,7 +916,7 @@ export class TenantDB {
         ],
       },
       include: {
-        user: true,
+        users: true,
       },
     });
   }
@@ -784,8 +972,12 @@ export class TenantDB {
       const mappedCategory = categoryMap[data.category] || 'system';
       const mappedPriority = data.priority ? priorityMap[data.priority] || 'MEDIUM' : 'MEDIUM';
 
-      return await prisma.notification.create({
+      const { randomUUID } = require('crypto');
+      const notifId = randomUUID().replace(/-/g, '');
+      
+      return await (prisma as any).notifications.create({
         data: {
+          id: notifId,
           userId: data.userId,
           tenantId: this.tenantId,
           type: mappedType,
@@ -809,7 +1001,7 @@ export class TenantDB {
   }
 
   async markNotificationRead(id: string, userId: string) {
-    return prisma.notification.updateMany({
+    return (prisma as any).notifications.updateMany({
       where: {
         id,
         userId,
@@ -823,7 +1015,7 @@ export class TenantDB {
   }
 
   async markAllNotificationsRead(userId: string) {
-    return prisma.notification.updateMany({
+    return (prisma as any).notifications.updateMany({
       where: {
         userId,
         tenantId: this.tenantId,
@@ -859,7 +1051,7 @@ export class TenantDB {
         where.category = filters.category;
       }
 
-      const notifications = await prisma.notification.findMany({
+      const notifications = await (prisma as any).notifications.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: filters?.limit || 20,
@@ -869,7 +1061,7 @@ export class TenantDB {
         }),
       });
 
-      const unreadCount = await prisma.notification.count({
+      const unreadCount = await (prisma as any).notifications.count({
         where: {
           userId,
           tenantId: this.tenantId,
@@ -895,7 +1087,7 @@ export class TenantDB {
 
   async getNotificationPreferences(userId: string) {
     try {
-      return await prisma.notificationPreference.findMany({
+      return await (prisma as any).notification_preferences.findMany({
         where: { userId },
         orderBy: { category: 'asc' },
       });
@@ -919,7 +1111,7 @@ export class TenantDB {
     }>
   ) {
     const operations = preferences.map((pref) =>
-      prisma.notificationPreference.upsert({
+      (prisma as any).notification_preferences.upsert({
         where: {
           userId_category: {
             userId,
@@ -958,7 +1150,7 @@ export function createTenantDB(tenantId: string): TenantDB {
 
 // Global database operations (for platform-level operations)
 export async function getTenant(tenantId: string) {
-  return prisma.tenant.findUnique({
+  return (prisma as any).tenants.findUnique({
     where: { id: tenantId },
     include: {
       _count: {
@@ -973,13 +1165,13 @@ export async function getTenant(tenantId: string) {
 }
 
 export async function getTenantBySubdomain(subdomain: string) {
-  return prisma.tenant.findUnique({
+  return (prisma as any).tenants.findUnique({
     where: { subdomain },
   });
 }
 
 export async function getTenantByCustomDomain(customDomain: string) {
-  return prisma.tenant.findFirst({
+  return (prisma as any).tenants.findFirst({
     where: { customDomain },
   });
 }
@@ -990,7 +1182,7 @@ export async function createTenant(data: {
   customDomain?: string;
   plan?: string;
 }) {
-  return prisma.tenant.create({
+  return (prisma as any).tenants.create({
     data: {
       ...data,
       plan: (data.plan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL' | undefined) || 'FREE',

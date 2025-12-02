@@ -46,7 +46,7 @@ export async function GET(
     // In production, you'd want proper tenant isolation
     const { prisma } = await import('@/lib/db');
     
-    const widget = await prisma.widget.findFirst({
+    const widget = await (prisma as any).widgets.findFirst({
       where: { id: widgetId },
       include: {
         bot: {

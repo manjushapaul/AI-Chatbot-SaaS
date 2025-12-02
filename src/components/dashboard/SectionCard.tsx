@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 
 interface SectionCardProps {
-  title: string;
+  title: string | ReactNode;
   action?: ReactNode;
   children: ReactNode;
 }

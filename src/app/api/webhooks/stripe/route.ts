@@ -10,6 +10,8 @@ interface StripeSubscription {
   };
   customer?: string;
   status?: string;
+  trial_start?: number;
+  trial_end?: number;
   current_period_start?: number;
   current_period_end?: number;
   cancel_at_period_end?: boolean;
@@ -104,26 +106,33 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: StripeSubscription) {
   try {
-    const tenantId = subscription.metadata.tenantId;
+    const tenantId = subscription.metadata?.tenantId;
     if (!tenantId) {
       console.error('No tenant ID in subscription metadata');
       return;
     }
 
     // Get plan from price ID
-    const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id);
+    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const planId = priceId ? await getPlanIdFromPriceId(priceId) : 'FREE';
+    
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+    const now = new Date();
+    const isTrialExpired = trialEnd ? trialEnd <= now : false;
     
     // Create or update subscription record
-    await prisma.subscription.upsert({
+    await (prisma as any).subscriptions.upsert({
       where: { tenantId },
       update: {
         plan: planId,
         stripeSubscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer,
-        stripePriceId: subscription.items.data[0].price.id,
-        status: subscription.status.toUpperCase(),
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        stripeCustomerId: subscription.customer as string,
+        stripePriceId: priceId,
+        status: subscription.status?.toUpperCase() as any,
+        trialEndsAt: trialEnd,
+        isTrialExpired: isTrialExpired,
+        currentPeriodStart: new Date(subscription.current_period_start! * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         updatedAt: new Date()
       },
@@ -131,22 +140,26 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
         tenantId,
         plan: planId,
         stripeSubscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer,
-        stripePriceId: subscription.items.data[0].price.id,
-        status: subscription.status.toUpperCase(),
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        stripeCustomerId: subscription.customer as string,
+        stripePriceId: priceId,
+        status: subscription.status?.toUpperCase() as any,
+        trialEndsAt: trialEnd,
+        isTrialExpired: isTrialExpired,
+        currentPeriodStart: new Date(subscription.current_period_start! * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end
       }
     });
 
-    // Update tenant plan
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { plan: planId }
-    });
+    // Only update tenant plan if not in trial or trial expired with payment
+    if (subscription.status === 'ACTIVE' && !isTrialExpired) {
+      await (prisma as any).tenants.update({
+        where: { id: tenantId },
+        data: { plan: planId }
+      });
+    }
 
-    console.log(`Subscription created for tenant ${tenantId}, plan ${planId}`);
+    console.log(`Subscription created for tenant ${tenantId}, plan ${planId}, trial ends: ${trialEnd}`);
   } catch (error) {
     console.error('Error handling subscription created:', error);
   }
@@ -154,35 +167,50 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
 
 async function handleSubscriptionUpdated(subscription: StripeSubscription) {
   try {
-    const tenantId = subscription.metadata.tenantId;
+    const tenantId = subscription.metadata?.tenantId;
     if (!tenantId) {
       console.error('No tenant ID in subscription metadata');
       return;
     }
 
     // Get plan from price ID
-    const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id);
+    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const planId = priceId ? await getPlanIdFromPriceId(priceId) : 'FREE';
+
+    const now = new Date();
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+    const isTrialExpired = trialEnd ? trialEnd <= now : false;
+    const status = subscription.status?.toUpperCase() as any;
+
+    // If trial ended and status is still TRIALING, mark as expired
+    const finalStatus = (status === 'TRIALING' && isTrialExpired) ? 'TRIALING' : status;
+    const finalIsTrialExpired = (status === 'TRIALING' && isTrialExpired) || (status === 'ACTIVE' && !subscription.trial_end);
 
     // Update subscription record
-    await prisma.subscription.updateMany({
+    await (prisma as any).subscriptions.updateMany({
       where: { tenantId },
       data: {
         plan: planId,
-        status: subscription.status.toUpperCase(),
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        status: finalStatus,
+        trialEndsAt: trialEnd,
+        isTrialExpired: finalIsTrialExpired,
+        currentPeriodStart: new Date(subscription.current_period_start! * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         updatedAt: new Date()
       }
     });
 
-    // Update tenant plan
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { plan: planId }
-    });
+    // If trial expired and no payment, keep on FREE plan
+    // If payment succeeded, update tenant plan
+    if (status === 'ACTIVE' && !isTrialExpired) {
+      await (prisma as any).tenants.update({
+        where: { id: tenantId },
+        data: { plan: planId }
+      });
+    }
 
-    console.log(`Subscription updated for tenant ${tenantId}, plan ${planId}`);
+    console.log(`Subscription updated for tenant ${tenantId}, plan ${planId}, trial expired: ${finalIsTrialExpired}`);
   } catch (error) {
     console.error('Error handling subscription updated:', error);
   }
@@ -197,7 +225,7 @@ async function handleSubscriptionDeleted(subscription: StripeSubscription) {
     }
 
     // Update subscription record
-    await prisma.subscription.updateMany({
+    await (prisma as any).subscriptions.updateMany({
       where: { tenantId },
       data: {
         status: 'CANCELED',
@@ -207,7 +235,7 @@ async function handleSubscriptionDeleted(subscription: StripeSubscription) {
     });
 
     // Reset tenant to free plan
-    await prisma.tenant.update({
+    await (prisma as any).tenants.update({
       where: { id: tenantId },
       data: { plan: 'FREE' }
     });
@@ -220,29 +248,99 @@ async function handleSubscriptionDeleted(subscription: StripeSubscription) {
 
 async function handlePaymentSucceeded(invoice: StripeInvoice) {
   try {
-    const tenantId = invoice.subscription?.metadata?.tenantId;
+    const tenantId = typeof invoice.subscription === 'object' 
+      ? invoice.subscription?.metadata?.tenantId 
+      : null;
+    
     if (!tenantId) {
-      console.error('No tenant ID in invoice metadata');
+      // Try to get from subscription record
+      const subscriptionId = typeof invoice.subscription === 'string' 
+        ? invoice.subscription 
+        : invoice.subscription?.id;
+      
+      if (subscriptionId) {
+        const sub = await (prisma as any).subscriptions.findFirst({
+          where: { stripeSubscriptionId: subscriptionId }
+        });
+        if (sub) {
+          const tenantId = sub.tenantId;
+          
+          // Update subscription to clear trial expiration
+          await (prisma as any).subscriptions.update({
+            where: { id: sub.id },
+            data: {
+              isTrialExpired: false,
+              status: 'ACTIVE',
+              updatedAt: new Date()
+            }
+          });
+          
+          // Record payment
+          await (prisma as any).billing_history.create({
+            data: {
+              tenantId: sub.tenantId,
+              invoiceNumber: invoice.number || `INV_${Date.now()}`,
+              amount: (invoice.amount_paid || 0) / 100,
+              currency: (invoice.currency || 'USD').toUpperCase(),
+              status: 'PAID',
+              billingPeriodStart: new Date((invoice.period_start || 0) * 1000),
+              billingPeriodEnd: new Date((invoice.period_end || 0) * 1000),
+              plan: sub.plan,
+              stripeInvoiceId: invoice.id,
+              stripePaymentIntentId: invoice.payment_intent as string,
+              description: `Payment for ${invoice.description || 'subscription'}`,
+              metadata: {
+                invoiceId: invoice.id,
+                subscriptionId: subscriptionId,
+                amountPaid: invoice.amount_paid,
+                currency: invoice.currency
+              }
+            }
+          });
+          
+          console.log(`Payment succeeded for tenant ${sub.tenantId}`);
+          return;
+        }
+      }
+      
+      console.error('No tenant ID found for payment succeeded');
       return;
     }
 
+    // Get subscription to determine plan
+    const subscription = await (prisma as any).subscriptions.findUnique({
+      where: { tenantId }
+    });
+
+    // Update subscription to clear trial expiration
+    if (subscription) {
+      await (prisma as any).subscriptions.update({
+        where: { id: subscription.id },
+        data: {
+          isTrialExpired: false,
+          status: 'ACTIVE',
+          updatedAt: new Date()
+        }
+      });
+    }
+
     // Record successful payment in billing history
-    await prisma.billingHistory.create({
+    await (prisma as any).billing_history.create({
       data: {
         tenantId,
         invoiceNumber: invoice.number || `INV_${Date.now()}`,
-        amount: invoice.amount_paid / 100, // Convert from cents
-        currency: invoice.currency.toUpperCase(),
+        amount: (invoice.amount_paid || 0) / 100, // Convert from cents
+        currency: (invoice.currency || 'USD').toUpperCase(),
         status: 'PAID',
-        billingPeriodStart: new Date(invoice.period_start * 1000),
-        billingPeriodEnd: new Date(invoice.period_end * 1000),
-        plan: 'FREE', // This should be updated to actual plan
+        billingPeriodStart: new Date((invoice.period_start || 0) * 1000),
+        billingPeriodEnd: new Date((invoice.period_end || 0) * 1000),
+        plan: subscription?.plan || 'FREE',
         stripeInvoiceId: invoice.id,
-        stripePaymentIntentId: invoice.payment_intent,
+        stripePaymentIntentId: invoice.payment_intent as string,
         description: `Payment for ${invoice.description || 'subscription'}`,
         metadata: {
           invoiceId: invoice.id,
-          subscriptionId: invoice.subscription,
+          subscriptionId: typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id,
           amountPaid: invoice.amount_paid,
           currency: invoice.currency
         }
@@ -264,7 +362,7 @@ async function handlePaymentFailed(invoice: StripeInvoice) {
     }
 
     // Record failed payment in billing history
-    await prisma.billingHistory.create({
+    await (prisma as any).billing_history.create({
       data: {
         tenantId,
         invoiceNumber: invoice.number || `INV_${Date.now()}`,
@@ -300,8 +398,22 @@ async function handleTrialWillEnd(subscription: StripeSubscription) {
       return;
     }
 
-    console.log(`Trial will end for tenant ${tenantId}`);
-    // You could send an email notification here
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+    
+    // Update subscription with trial end date
+    if (trialEnd) {
+      await (prisma as any).subscriptions.updateMany({
+        where: { tenantId },
+        data: {
+          trialEndsAt: trialEnd,
+          updatedAt: new Date()
+        }
+      });
+    }
+
+    // TODO: Send email notification (3-7 days before trial ends)
+    // This would integrate with your notification system
+    console.log(`Trial will end for tenant ${tenantId} on ${trialEnd}`);
   } catch (error) {
     console.error('Error handling trial will end:', error);
   }

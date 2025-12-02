@@ -20,8 +20,8 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   
   const getPrimaryButtonClass = () => {
     return theme === 'dark' 
-      ? 'bg-accent-soft text-white hover:bg-accent-soft/90 hover:shadow-lg hover:scale-[1.02]'
-      : 'bg-[#16A34A] text-white hover:bg-[#16A34A]/90 hover:shadow-lg hover:scale-[1.02]';
+      ? 'bg-[#563517e6] text-white hover:bg-[#563517b3] hover:shadow-lg hover:scale-[1.02]'
+      : 'bg-accent-soft text-white hover:bg-accent-soft/80 hover:shadow-lg hover:scale-[1.02]';
   };
 
   return (

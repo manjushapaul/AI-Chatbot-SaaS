@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get subscription to find Stripe customer ID
-    const subscription = await prisma.subscription.findUnique({
+    const subscription = await (prisma as any).subscriptions.findUnique({
       where: { tenantId: tenantContext.id }
     });
 

@@ -127,7 +127,7 @@ export default function CreateKnowledgeBasePage() {
               value={formData.botId}
               onChange={handleInputChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-transparent"
             >
               <option value="">Select a bot</option>
               {bots.map((bot) => (
@@ -156,7 +156,7 @@ export default function CreateKnowledgeBasePage() {
               onChange={handleInputChange}
               required
               placeholder="e.g., Product Documentation, Company Policies"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-transparent"
             />
           </div>
 
@@ -172,7 +172,7 @@ export default function CreateKnowledgeBasePage() {
               onChange={handleInputChange}
               rows={3}
               placeholder="Describe what this knowledge base will contain..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-transparent"
             />
           </div>
 
@@ -186,7 +186,7 @@ export default function CreateKnowledgeBasePage() {
                   After creating the knowledge base, you&apos;ll be able to:
                 </p>
                 <ul className="list-disc list-inside mt-2 space-y-1 text-white">
-                  <li>Upload documents (PDFs, Word docs, text files)</li>
+                  <li>Upload documents (Word docs, text files)</li>
                   <li>Add custom FAQs and answers</li>
                   <li>Train your bot with this knowledge</li>
                   <li>Test responses based on the content</li>

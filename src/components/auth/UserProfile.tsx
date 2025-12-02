@@ -12,7 +12,7 @@ export function UserProfile() {
   }
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/auth' });
+    signOut({ callbackUrl: '/' });
   };
 
   return (

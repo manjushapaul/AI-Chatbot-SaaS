@@ -169,7 +169,7 @@ export default function WidgetTestPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Widget not found</h1>
           <button
             onClick={() => window.close()}
-            className="bg-gradient-to-r from-[#FFFCEB] via-[#F8EAFE] to-[#FFD6EF] text-gray-900 px-4 py-2 rounded-lg hover:opacity-90"
+            className="bg-gradient-to-r from-amber-50 via-amber-100 to-amber-200 text-gray-900 px-4 py-2 rounded-lg hover:opacity-90"
           >
             Close Tab
           </button>
@@ -423,7 +423,7 @@ export default function WidgetTestPage() {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
                 style={{
                   backgroundColor: widget.config.theme === 'dark' ? '#374151' : '#ffffff',
                   color: widget.config.theme === 'dark' ? '#f9fafb' : '#111827',

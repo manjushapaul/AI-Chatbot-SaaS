@@ -31,7 +31,7 @@ export function Header() {
 
   const handleSignOut = () => {
     setIsProfileOpen(false);
-    signOut({ callbackUrl: '/auth' });
+    signOut({ callbackUrl: '/' });
   };
 
   const handleProfileClick = () => {

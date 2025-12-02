@@ -4,12 +4,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Bot, BookOpen } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface KnowledgeBase {
   id: string;
   name: string;
   description?: string;
-  bot: {
+  botId: string;
+  bots?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  bot?: {
     id: string;
     name: string;
     description?: string;
@@ -19,6 +26,7 @@ interface KnowledgeBase {
 export default function EditKnowledgeBasePage() {
   const params = useParams();
   const router = useRouter();
+  const { theme } = useTheme();
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -168,7 +176,7 @@ export default function EditKnowledgeBasePage() {
           href={`/dashboard/knowledge-bases/${knowledgeBaseId}`}
           className="text-gray-600 hover:text-gray-900 transition-colors"
         >
-          <ArrowLeft className="w-6 h-6 text-white" />
+          <ArrowLeft className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Knowledge Base</h1>
@@ -192,9 +200,11 @@ export default function EditKnowledgeBasePage() {
               <Bot className="w-5 h-5 text-accent-strong" />
               <h3 className="font-medium text-gray-900">Connected Bot</h3>
             </div>
-            <p className="text-lg font-medium text-gray-900 mb-1">{knowledgeBase.bot.name}</p>
+            <p className="text-lg font-medium text-gray-900 mb-1">
+              {(knowledgeBase.bots || knowledgeBase.bot)?.name || 'No bot connected'}
+            </p>
             <p className="text-sm text-gray-600">
-              {knowledgeBase.bot.description || 'No description'}
+              {(knowledgeBase.bots || knowledgeBase.bot)?.description || 'No description'}
             </p>
             <p className="text-xs text-gray-500 mt-2">
               Note: You cannot change which bot this knowledge base is connected to.
@@ -214,7 +224,7 @@ export default function EditKnowledgeBasePage() {
               onChange={handleInputChange}
               required
               placeholder="e.g., Product Documentation, Company Policies"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-transparent"
             />
           </div>
 
@@ -230,7 +240,7 @@ export default function EditKnowledgeBasePage() {
               onChange={handleInputChange}
               rows={3}
               placeholder="Describe what this knowledge base contains..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-transparent"
             />
           </div>
 

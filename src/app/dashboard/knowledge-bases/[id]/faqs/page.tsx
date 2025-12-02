@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Save, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FAQ {
   id: string;
@@ -22,6 +23,7 @@ interface KnowledgeBase {
 export default function ManageFAQSPage() {
   const params = useParams();
   const router = useRouter();
+  const { theme } = useTheme();
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,7 +229,7 @@ export default function ManageFAQSPage() {
             href={`/dashboard/knowledge-bases/${knowledgeBaseId}`}
             className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <ArrowLeft className="w-6 h-6 text-white" />
+            <ArrowLeft className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Manage FAQs</h1>
@@ -236,9 +238,13 @@ export default function ManageFAQSPage() {
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+          className={`rounded-full text-white px-4 py-2 text-sm font-medium flex items-center space-x-2 transition-colors ${
+            theme === 'dark'
+              ? 'bg-[#563517e6] hover:bg-[#563517b3]'
+              : 'bg-accent-soft hover:bg-accent-soft/80'
+          }`}
         >
-          <Plus className="w-4 h-4 text-accent-strong" />
+          <Plus className="w-4 h-4 text-white" />
           <span>Add FAQ</span>
         </button>
       </div>
@@ -322,9 +328,13 @@ export default function ManageFAQSPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                  className={`rounded-full text-white px-4 py-2 text-sm font-medium flex items-center space-x-2 transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#563517e6] hover:bg-[#563517b3]'
+                      : 'bg-accent-soft hover:bg-accent-soft/80'
+                  }`}
                 >
-                  <Save className="w-4 h-4 text-accent-strong" />
+                  <Save className="w-4 h-4 text-white" />
                   <span>{editingFAQ ? 'Update FAQ' : 'Add FAQ'}</span>
                 </button>
               </div>
@@ -349,9 +359,13 @@ export default function ManageFAQSPage() {
             </p>
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors inline-flex items-center space-x-2"
+              className={`rounded-full text-white px-4 py-2 text-sm font-medium inline-flex items-center space-x-2 transition-colors ${
+                theme === 'dark'
+                  ? 'bg-[#563517e6] hover:bg-[#563517b3]'
+                  : 'bg-accent-soft hover:bg-accent-soft/80'
+              }`}
             >
-              <Plus className="w-5 h-5 text-accent-strong" />
+              <Plus className="w-4 h-4 text-white" />
               <span>Add First FAQ</span>
             </button>
           </div>

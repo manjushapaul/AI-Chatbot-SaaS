@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bot, Palette, Monitor, Settings, Eye } from 'lucide-react';
 import { AppPage } from '@/components/dashboard/AppPage';
 import { FormCard } from '@/components/dashboard/FormCard';
+import { ChatWidgetPreview } from '@/components/dashboard/ChatWidgetPreview';
 import { typography, spacing, cardBase, cardPadding } from '@/lib/design-tokens';
 
 interface Bot {
@@ -123,80 +124,16 @@ export default function CreateWidgetPage() {
   const getWidgetPreview = () => {
     const { config } = formData;
     return (
-      <div 
-        className="w-full max-w-sm mx-auto bg-white border rounded-lg shadow-lg flex flex-col"
-        style={{ 
-          backgroundColor: config.theme === 'dark' ? '#1F2937' : '#FFFFFF',
-          borderColor: config.primaryColor 
-        }}
-      >
-        {/* Header */}
-        <div 
-          className="p-4 rounded-t-lg flex items-center justify-between"
-          style={{ backgroundColor: config.primaryColor }}
-        >
-          <div className="flex items-center space-x-2">
-            {config.showAvatar && (
-              <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-                <span className="text-sm font-bold text-white">AI</span>
-              </div>
-            )}
-            <span className="text-white font-medium text-sm">{config.chatTitle}</span>
-          </div>
-          <button className="text-white hover:text-gray-200">
-            <span className="text-lg">×</span>
-          </button>
-        </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 p-4 space-y-3 min-h-[200px]">
-          {config.welcomeMessage && (
-            <div className="flex justify-start">
-              <div 
-                className="max-w-xs p-3 rounded-lg text-sm"
-                style={{ 
-                  backgroundColor: config.secondaryColor,
-                  color: '#FFFFFF'
-                }}
-              >
-                {config.welcomeMessage}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-end">
-            <div 
-              className="max-w-xs p-3 rounded-lg text-sm"
-              style={{ 
-                backgroundColor: config.primaryColor,
-                color: '#FFFFFF'
-              }}
-            >
-              Hello! I&apos;m here to help.
-            </div>
-          </div>
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t" style={{ borderColor: config.secondaryColor }}>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Type your message..."
-              className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2"
-              style={{ 
-                borderColor: config.secondaryColor
-              }}
-            />
-            <button 
-              className="px-4 py-2 rounded-lg text-white text-sm whitespace-nowrap flex-shrink-0"
-              style={{ backgroundColor: config.primaryColor }}
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      </div>
+      <ChatWidgetPreview
+        title={config.chatTitle || 'Live chat'}
+        welcomeMessage={config.welcomeMessage}
+        primaryColor={config.primaryColor}
+        secondaryColor={config.secondaryColor}
+        theme={config.theme}
+        size={config.size}
+        showAvatar={config.showAvatar}
+        botInitials="AI"
+      />
     );
   };
 

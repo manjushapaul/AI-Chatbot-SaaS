@@ -1,23 +1,8 @@
 import * as mammoth from 'mammoth';
 
-// Import pdf-parse more safely to avoid hardcoded path issues
-let pdf: { (data: Buffer): Promise<{ text: string; [key: string]: unknown }> } | null;
-try {
-  // Try dynamic import first
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  pdf = require('pdf-parse');
-} catch (error) {
-  console.warn('PDF parsing library not available:', error);
-  pdf = null;
-}
-
-// Temporarily disable PDF support to debug the issue
-pdf = null;
-console.log('PDF support temporarily disabled for debugging');
-
 export interface ProcessedDocument {
   content: string;
-  type: 'PDF' | 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON';
+  type: 'DOCX' | 'TXT' | 'HTML' | 'MARKDOWN' | 'JSON';
   metadata: {
     pages?: number;
     wordCount: number;
@@ -68,25 +53,6 @@ export class DocumentProcessor {
 
     try {
       switch (type) {
-        case 'PDF':
-          if (!pdf) {
-            throw new Error('PDF parsing library is not available. Please install it.');
-          }
-          try {
-            const pdfData = await pdf.default(buffer);
-            content = pdfData.text;
-            metadata = {
-              pages: pdfData.numpages,
-              wordCount: content.split(/\s+/).length,
-              charCount: content.length,
-              extractedAt: new Date().toISOString()
-            };
-          } catch (pdfError) {
-            console.error('PDF parsing error:', pdfError);
-            throw new Error(`Failed to parse PDF file: ${pdfError instanceof Error ? pdfError.message : 'Unknown PDF error'}`);
-          }
-          break;
-
         case 'DOCX':
           const docxResult = await mammoth.extractRawText({ buffer });
           content = docxResult.value;
@@ -341,23 +307,11 @@ export class DocumentProcessor {
   }
 
   /**
-   * Check if PDF processing is available
-   */
-  static isPDFProcessingAvailable(): boolean {
-    const result = pdf !== null;
-    console.log(`isPDFProcessingAvailable: ${result} (pdf: ${pdf ? 'loaded' : 'null'})`);
-    return result;
-  }
-
-  /**
    * Get supported file types
    */
   static getSupportedFileTypes(): string[] {
-    // Always return basic supported types for now
     const types = ['TXT', 'HTML', 'MARKDOWN', 'JSON', 'DOCX'];
-    
     console.log(`getSupportedFileTypes: ${types.join(', ')}`);
-    
     return types;
   }
 

@@ -292,7 +292,7 @@ export default function BillingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className={`text-lg font-semibold mb-1 ${
-                theme === 'dark' ? 'text-accent-soft' : 'text-[#EC4899]'
+                theme === 'dark' ? 'text-accent-soft' : 'text-amber-500'
               }`}>
                 {currentPlanData?.name || 'Free'}
               </div>
@@ -397,7 +397,7 @@ export default function BillingPage() {
                   key={plan.id}
                   className={`flex flex-col rounded-2xl border px-5 py-5 shadow-[0_14px_35px_rgba(15,23,42,0.06)] ${
                     isCurrentPlan
-                      ? `border-accent-soft ${theme === 'dark' ? 'bg-[#F5E6D3]' : 'bg-[#FDF2F8]'}`
+                      ? `border-accent-soft ${theme === 'dark' ? 'bg-[#F5E6D3]' : 'bg-amber-50'}`
                       : 'border-gray-100 bg-white/90'
                   }`}
                 >

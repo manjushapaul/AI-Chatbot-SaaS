@@ -6,6 +6,7 @@ import { Bot, Save, ArrowLeft, Sparkles, Settings, Brain, Info, ChevronDown, Che
 import Link from 'next/link';
 import { AppPage } from '@/components/dashboard/AppPage';
 import { typography, spacing } from '@/lib/design-tokens';
+import { EmojiPicker } from '@/components/ui/EmojiPicker';
 
 interface BotFormData {
   name: string;
@@ -321,21 +322,15 @@ export default function CreateBotPage() {
                 />
               </div>
               
-              <div className="md:w-64">
+              <div className="md:w-1/3">
                 <label className={`mb-1 block ${typography.labelLarge}`}>
                   Avatar Emoji
                 </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const emoji = prompt('Enter an emoji:', formData.avatar || '🤖');
-                    if (emoji) handleInputChange('avatar', emoji);
-                  }}
-                  className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-base text-gray-800 focus:border-accent-soft focus:ring-2 focus:ring-accent-soft/40 focus:outline-none flex items-center justify-between hover:bg-white/90 transition-colors"
-                >
-                  <span className={`${typography.bodyLarge} text-gray-500`}>Choose emoji</span>
-                  <span className="text-2xl">{formData.avatar || '🤖'}</span>
-                </button>
+                <EmojiPicker
+                  value={formData.avatar}
+                  onChange={(emoji) => handleInputChange('avatar', emoji)}
+                  placeholder="🤖"
+                />
               </div>
             </div>
 

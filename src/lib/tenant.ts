@@ -13,26 +13,18 @@ export interface TenantContext {
 
 export async function getTenantContext(): Promise<TenantContext | null> {
   try {
-    // First try to get from headers (for multi-tenant setups)
-    const headersList = await headers();
-    const tenantId = headersList.get('x-tenant-id');
-    const tenantSubdomain = headersList.get('x-tenant-subdomain');
-
-    if (tenantId && tenantSubdomain) {
-      return {
-        id: tenantId,
-        subdomain: tenantSubdomain,
-      };
-    }
-
-    // If no headers, try to get from current user session
+    // PRIORITY 1: Try to get from current user session (most reliable)
     try {
       const session = await getServerSession(authOptions);
+      console.log('[getTenantContext] Session user:', session?.user?.email, 'Tenant ID:', session?.user?.tenantId);
+      
       if (session?.user?.tenantId) {
         // Get tenant details from database
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await (prisma as any).tenants.findUnique({
           where: { id: session.user.tenantId }
         });
+
+        console.log('[getTenantContext] Tenant from DB:', tenant?.subdomain);
 
         if (tenant) {
           return {
@@ -45,13 +37,28 @@ export async function getTenantContext(): Promise<TenantContext | null> {
         }
       }
     } catch (sessionError) {
-      console.log('Session-based tenant context failed, trying request-based...');
+      console.log('[getTenantContext] Session-based tenant context failed:', sessionError);
+    }
+
+    // PRIORITY 2: Try to get from headers (for multi-tenant setups)
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+    const tenantSubdomain = headersList.get('x-tenant-subdomain');
+
+    // Ignore dev/localhost headers
+    if (tenantId && tenantSubdomain && !tenantId.includes('dev-') && !tenantSubdomain.includes('localhost')) {
+      console.log('[getTenantContext] From headers:', tenantId, tenantSubdomain);
+      return {
+        id: tenantId,
+        subdomain: tenantSubdomain,
+      };
     }
 
     // Fallback to request-based tenant extraction
+    console.log('[getTenantContext] No tenant context found');
     return null;
   } catch (error) {
-    console.error('Error getting tenant context:', error);
+    console.error('[getTenantContext] Error getting tenant context:', error);
     return null;
   }
 }

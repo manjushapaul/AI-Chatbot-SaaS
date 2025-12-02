@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get conversations data
-    const conversations: ConversationWithMessages[] = await prisma.conversation.findMany({
+    const conversations: ConversationWithMessages[] = await (prisma as any).conversations.findMany({
       where: {
         tenantId,
         startedAt: {
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get users data
-    const users: UserType[] = await prisma.user.findMany({
+    const users: UserType[] = await (prisma as any).users.findMany({
       where: {
         tenantId,
         createdAt: {
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
 
     // Bot performance data
     const botPerformance = await Promise.all(
-      (await prisma.bot.findMany({ where: { tenantId } })).map(async (bot: BotType) => {
+      (await (prisma as any).bots.findMany({ where: { tenantId } })).map(async (bot: BotType) => {
         const botConversations = conversations.filter((c: ConversationWithMessages) => c.botId === bot.id);
         const botSatisfaction = satisfactionScore; // Placeholder
         const botResponseTime = avgResponseTime; // Placeholder

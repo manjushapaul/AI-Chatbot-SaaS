@@ -105,13 +105,13 @@ export class PlanLimitsService {
           return knowledgeBases.length;
 
         case 'documents':
-          const documents = await prisma.document.findMany({
+          const documents = await (prisma as any).documents.findMany({
             where: { knowledgeBase: { tenantId: tenantId } }
           });
           return documents.length;
 
         case 'conversations':
-          const conversations = await prisma.conversation.findMany({
+          const conversations = await (prisma as any).conversations.findMany({
             where: { tenantId: tenantId }
           });
           return conversations.length;
@@ -126,7 +126,7 @@ export class PlanLimitsService {
 
         case 'storage':
           // Calculate storage in MB
-          const docs = await prisma.document.findMany({
+          const docs = await (prisma as any).documents.findMany({
             where: { knowledgeBase: { tenantId: tenantId } }
           });
           const totalSize = docs.reduce((acc: number, doc: { content?: string; [key: string]: unknown }) => {

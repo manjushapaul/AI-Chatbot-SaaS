@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Trash2, Plus, FileText, MessageSquare, Bot, Upload, X, Eye } from 'lucide-react';
@@ -16,7 +16,13 @@ interface KnowledgeBase {
   status: string;
   createdAt: string;
   updatedAt: string;
-  bot: {
+  botId: string;
+  bots?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  bot?: {
     id: string;
     name: string;
     description?: string;
@@ -46,20 +52,34 @@ export default function KnowledgeBaseDetailPage() {
   const [success, setSuccess] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<{ id: string; name: string; type: string; [key: string]: unknown } | null>(null);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const lastFetchTime = useRef<number>(0);
 
   const knowledgeBaseId = params.id as string;
 
   // Fetch knowledge base details
-  const fetchKnowledgeBase = async () => {
+  const fetchKnowledgeBase = async (force = false) => {
+    // Prevent too frequent refreshes (throttle to at least 500ms apart)
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < 500) {
+      console.log('[KB Detail] Skipping fetch - too soon since last fetch');
+      return;
+    }
+    lastFetchTime.current = now;
+
     try {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch(`/api/knowledge-bases/${knowledgeBaseId}`);
+      // Add cache-busting parameter to ensure fresh data
+      const cacheBuster = force ? `?t=${Date.now()}` : '';
+      const response = await fetch(`/api/knowledge-bases/${knowledgeBaseId}${cacheBuster}`, {
+        cache: 'no-store', // Always fetch fresh data
+      });
       
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
+          console.log(`[KB Detail] Fetched KB "${result.data.name}": ${result.data.documents?.length || 0} documents`);
           setKnowledgeBase(result.data);
         } else {
           setError(result.error || 'Failed to fetch knowledge base');
@@ -77,8 +97,58 @@ export default function KnowledgeBaseDetailPage() {
 
   useEffect(() => {
     if (knowledgeBaseId) {
-      fetchKnowledgeBase();
+      fetchKnowledgeBase(true); // Force fetch on mount
     }
+  }, [knowledgeBaseId]);
+
+  // Refresh data when page becomes visible (e.g., when navigating back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && knowledgeBaseId) {
+        console.log('[KB Detail] Page became visible, refreshing data...');
+        fetchKnowledgeBase();
+      }
+    };
+
+    const handleFocus = () => {
+      if (knowledgeBaseId) {
+        console.log('[KB Detail] Window focused, refreshing data...');
+        fetchKnowledgeBase(true); // Force refresh on focus
+      }
+    };
+
+    // Use router events to detect navigation
+    const handleRouteChange = () => {
+      if (knowledgeBaseId) {
+        console.log('[KB Detail] Route changed, refreshing data...');
+        // Small delay to ensure route is fully loaded
+        setTimeout(() => {
+          fetchKnowledgeBase(true); // Force refresh on route change
+        }, 100);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    // Listen for popstate (back/forward navigation)
+    window.addEventListener('popstate', handleRouteChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, [knowledgeBaseId]);
+
+  // Expose refresh function for manual refresh (e.g., from child components)
+  useEffect(() => {
+    // Store refresh function in window for potential cross-component access
+    (window as { refreshKB?: () => void }).refreshKB = fetchKnowledgeBase;
+    
+    return () => {
+      delete (window as { refreshKB?: () => void }).refreshKB;
+    };
   }, [knowledgeBaseId]);
 
   const handleDeleteKnowledgeBase = async () => {
@@ -224,9 +294,9 @@ export default function KnowledgeBaseDetailPage() {
           </Link>
           <button
             onClick={handleDeleteKnowledgeBase}
-            className="rounded-full bg-rose-50 text-rose-600 border border-rose-100 px-4 py-2 text-sm hover:bg-rose-100 transition-colors flex items-center space-x-2"
+            className="rounded-full bg-amber-50 text-amber-600 border border-amber-100 px-4 py-2 text-sm hover:bg-amber-100 transition-colors flex items-center space-x-2"
           >
-            <Trash2 className="w-4 h-4 text-rose-600" />
+            <Trash2 className="w-4 h-4 text-amber-600" />
             <span>Delete</span>
           </button>
         </div>
@@ -251,19 +321,19 @@ export default function KnowledgeBaseDetailPage() {
         <StatCard
           icon={<Bot className="w-4 h-4 text-gray-600" />}
           title="Connected Bot"
-          value={knowledgeBase.bot.name}
-          link={{
-            href: `/dashboard/bots/${knowledgeBase.bot.id}`,
+          value={(knowledgeBase.bots || knowledgeBase.bot)?.name || 'No bot connected'}
+          link={(knowledgeBase.bots || knowledgeBase.bot) ? {
+            href: `/dashboard/bots/${(knowledgeBase.bots || knowledgeBase.bot)?.id}`,
             text: 'View bot'
-          }}
+          } : undefined}
         />
         <StatCard
           icon={<FileText className="w-4 h-4 text-gray-600" />}
           title="Documents"
           value={knowledgeBase.documents.length}
           link={{
-            href: `/dashboard/knowledge-bases/${knowledgeBaseId}/upload`,
-            text: 'Upload more'
+            href: `/dashboard/knowledge-bases/${knowledgeBaseId}/documents`,
+            text: knowledgeBase.documents.length > 0 ? 'View all' : 'Upload documents'
           }}
         />
         <StatCard
@@ -279,19 +349,39 @@ export default function KnowledgeBaseDetailPage() {
 
       {/* Documents Section */}
       <SectionCard
-        title="Documents"
+        title={
+          <div className="flex items-center justify-between w-full">
+            <span>Documents</span>
+            {knowledgeBase.documents.length > 0 && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({knowledgeBase.documents.length} {knowledgeBase.documents.length === 1 ? 'document' : 'documents'})
+              </span>
+            )}
+          </div>
+        }
         action={
-          <Link
-            href={`/dashboard/knowledge-bases/${knowledgeBaseId}/upload`}
-            className={`rounded-full px-4 py-2 text-xs font-medium text-white shadow transition-all hover:shadow-lg hover:scale-[1.02] flex items-center gap-2 ${
-              theme === 'dark' 
-                ? 'bg-accent-soft hover:bg-accent-soft/90' 
-                : 'bg-[#16A34A] hover:bg-[#16A34A]/90'
-            }`}
-          >
-            <Upload className="w-3 h-3 text-white" />
-            <span>Upload Document</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {knowledgeBase.documents.length > 0 && (
+              <Link
+                href={`/dashboard/knowledge-bases/${knowledgeBaseId}/documents`}
+                className="rounded-full px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 shadow transition-all hover:shadow-md hover:scale-[1.02] flex items-center gap-2"
+              >
+                <Eye className="w-3 h-3" />
+                <span>View All</span>
+              </Link>
+            )}
+            <Link
+              href={`/dashboard/knowledge-bases/${knowledgeBaseId}/documents`}
+              className={`rounded-full px-4 py-2 text-xs font-medium text-white shadow transition-all hover:shadow-lg hover:scale-[1.02] flex items-center gap-2 ${
+                theme === 'dark' 
+                  ? 'bg-[#563517e6] hover:bg-[#563517b3]' 
+                  : 'bg-accent-soft hover:bg-accent-soft/80'
+              }`}
+            >
+              <Upload className="w-3 h-3 text-white" />
+              <span>Upload Document</span>
+            </Link>
+          </div>
         }
       >
         {knowledgeBase.documents.length === 0 ? (
@@ -300,20 +390,23 @@ export default function KnowledgeBaseDetailPage() {
             title="No documents yet"
             description="Upload documents to train your bot with this knowledge base."
             action={{
-              href: `/dashboard/knowledge-bases/${knowledgeBaseId}/upload`,
+              href: `/dashboard/knowledge-bases/${knowledgeBaseId}/documents`,
               text: 'Upload First Document',
               variant: 'primary'
             }}
           />
         ) : (
           <div className="space-y-3">
-            {knowledgeBase.documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-gray-200">
+            {/* Show first 5 documents, with link to view all if more */}
+            {knowledgeBase.documents.slice(0, 5).map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-gray-200 hover:bg-white/80 transition-colors group">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <FileText className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                  <div className="flex-shrink-0 p-2 bg-accent-soft/10 rounded-lg">
+                    <FileText className="w-5 h-5 text-accent-soft" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-accent-soft transition-colors">{doc.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {doc.type} • Added {new Date(doc.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -321,19 +414,49 @@ export default function KnowledgeBaseDetailPage() {
                 <div className="flex items-center space-x-2 flex-shrink-0">
                   <button 
                     onClick={() => handleViewDocument(doc.id)}
-                    className="text-xs text-gray-600 hover:text-gray-900 hover:underline"
+                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1.5"
+                    title="View document content"
                   >
+                    <Eye className="w-3.5 h-3.5" />
                     View
                   </button>
                   <button 
                     onClick={() => handleDeleteDocument(doc.id, doc.title)}
-                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors flex items-center gap-1.5"
+                    title="Delete document"
                   >
+                    <Trash2 className="w-3.5 h-3.5" />
                     Delete
                   </button>
                 </div>
               </div>
             ))}
+            
+            {/* Show "View All Documents" link if there are more than 5 */}
+            {knowledgeBase.documents.length > 5 && (
+              <div className="pt-2 border-t border-gray-200">
+                <Link
+                  href={`/dashboard/knowledge-bases/${knowledgeBaseId}/documents`}
+                  className="flex items-center justify-center gap-2 text-sm font-medium text-accent-soft hover:text-accent-soft/80 transition-colors py-2"
+                >
+                  <span>View all {knowledgeBase.documents.length} documents</span>
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            )}
+            
+            {/* Always show link to documents page for full management */}
+            {knowledgeBase.documents.length <= 5 && (
+              <div className="pt-2 border-t border-gray-200">
+                <Link
+                  href={`/dashboard/knowledge-bases/${knowledgeBaseId}/documents`}
+                  className="flex items-center justify-center gap-2 text-sm font-medium text-accent-soft hover:text-accent-soft/80 transition-colors py-2"
+                >
+                  <span>View and manage all documents</span>
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </SectionCard>
@@ -344,13 +467,13 @@ export default function KnowledgeBaseDetailPage() {
         action={
           <Link
             href={`/dashboard/knowledge-bases/${knowledgeBaseId}/faqs`}
-            className={`rounded-full px-4 py-2 text-xs font-medium text-white shadow transition-all hover:shadow-lg hover:scale-[1.02] flex items-center gap-2 ${
+            className={`rounded-full px-4 py-2 text-sm font-medium text-white shadow transition-all hover:shadow-lg hover:scale-[1.02] flex items-center gap-2 ${
               theme === 'dark' 
-                ? 'bg-accent-soft hover:bg-accent-soft/90' 
-                : 'bg-[#A855F7] hover:bg-[#A855F7]/90'
+                ? 'bg-[#563517e6] hover:bg-[#563517b3]' 
+                : 'bg-accent-soft hover:bg-accent-soft/80'
             }`}
           >
-            <Plus className="w-3 h-3 text-white" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Add FAQ</span>
           </Link>
         }
@@ -424,11 +547,19 @@ export default function KnowledgeBaseDetailPage() {
             </div>
             <div className="p-6 overflow-y-auto flex-1">
               <div className="prose max-w-none">
-                {selectedDocument.type === 'JSON' ? (
-                  <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-xs">
-                    <code>{JSON.stringify(JSON.parse(selectedDocument.content), null, 2)}</code>
-                  </pre>
-                ) : selectedDocument.type === 'MARKDOWN' ? (
+              {selectedDocument.type === 'JSON' ? (
+                <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-xs">
+                  <code>
+                    {(() => {
+                      try {
+                        return JSON.stringify(JSON.parse(selectedDocument.content), null, 2);
+                      } catch (e) {
+                        return `Invalid JSON format:\n\n${selectedDocument.content}`;
+                      }
+                    })()}
+                  </code>
+                </pre>
+              ) : selectedDocument.type === 'MARKDOWN' ? (
                   <div className="whitespace-pre-wrap font-mono bg-gray-100 p-4 rounded-lg text-xs">
                     {selectedDocument.content}
                   </div>

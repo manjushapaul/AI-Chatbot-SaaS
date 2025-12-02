@@ -146,14 +146,14 @@ export class SubscriptionService {
     reason?: string
   ): Promise<PlanChangeResult> {
     // Update tenant plan
-    await prisma.tenant.update({
+    await prisma.tenants.update({
       where: { id: tenantId },
       data: { plan: newPlanId }
     });
 
     // Update subscription record
     if (currentPlan !== 'FREE') {
-      await prisma.subscription.updateMany({
+      await prisma.subscriptions.updateMany({
         where: { tenantId },
         data: {
           plan: newPlanId,
@@ -205,7 +205,7 @@ export class SubscriptionService {
       );
 
       // Update local subscription record
-      await prisma.subscription.update({
+      await prisma.subscriptions.update({
         where: { id: currentSubscription.id },
         data: {
           plan: newPlanId,
@@ -216,7 +216,7 @@ export class SubscriptionService {
       });
 
       // Update tenant plan
-      await prisma.tenant.update({
+      await prisma.tenants.update({
         where: { id: tenantId },
         data: { plan: newPlanId }
       });
@@ -266,9 +266,45 @@ export class SubscriptionService {
    * Get subscription for a tenant
    */
   async getSubscription(tenantId: string) {
-    return await prisma.subscription.findUnique({
+    return await prisma.subscriptions.findUnique({
       where: { tenantId }
     });
+  }
+
+  /**
+   * Check if trial is expired (server-side check)
+   */
+  async isTrialExpired(tenantId: string): Promise<boolean> {
+    try {
+      const subscription = await this.getSubscription(tenantId);
+      if (!subscription || !subscription.trialEndsAt) {
+        return false;
+      }
+      
+      const now = new Date();
+      const trialEndDate = subscription.trialEndsAt instanceof Date 
+        ? subscription.trialEndsAt 
+        : new Date(subscription.trialEndsAt);
+      const isExpired = trialEndDate <= now;
+      
+      // Update isTrialExpired flag if it's out of sync
+      if (isExpired !== subscription.isTrialExpired) {
+        try {
+          await prisma.subscriptions.update({
+            where: { id: subscription.id },
+            data: { isTrialExpired: isExpired }
+          });
+        } catch (updateError) {
+          console.error('Error updating isTrialExpired flag:', updateError);
+          // Continue even if update fails
+        }
+      }
+      
+      return isExpired;
+    } catch (error) {
+      console.error('Error checking trial expiration:', error);
+      return false; // Don't block on error
+    }
   }
 
   /**
@@ -276,7 +312,7 @@ export class SubscriptionService {
    */
   async getSubscriptionStatus(tenantId: string): Promise<SubscriptionStatus> {
     const subscription = await this.getSubscription(tenantId);
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await prisma.tenants.findUnique({ where: { id: tenantId } });
 
     if (!subscription || !tenant) {
       return {
@@ -289,8 +325,11 @@ export class SubscriptionService {
       };
     }
 
+    // Check if trial is expired
+    const trialExpired = await this.isTrialExpired(tenantId);
+
     return {
-      isActive: subscription.status === 'ACTIVE',
+      isActive: subscription.status === 'ACTIVE' && !trialExpired,
       currentPlan: subscription.plan,
       status: subscription.status,
       currentPeriodEnd: subscription.currentPeriodEnd,
@@ -313,7 +352,7 @@ export class SubscriptionService {
       await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await prisma.subscription.update({
+      await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'CANCELED',
@@ -353,7 +392,7 @@ export class SubscriptionService {
       await stripeService.reactivateSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await prisma.subscription.update({
+      await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'ACTIVE',
@@ -392,10 +431,17 @@ export class SubscriptionService {
     const fromPlanDetails = stripeService.getPlan(fromPlan);
     const toPlanDetails = stripeService.getPlan(toPlan);
 
-    await prisma.billingHistory.create({
+    const { randomUUID } = require('crypto');
+    const billingId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    
+    await prisma.billing_history.create({
       data: {
+        id: billingId,
         tenantId,
         invoiceNumber: `PLAN_CHANGE_${Date.now()}`,
+        createdAt: now,
+        updatedAt: now,
         amount: toPlanDetails?.price || 0,
         currency: 'USD',
         status: 'PENDING',

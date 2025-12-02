@@ -93,7 +93,7 @@ export const CHART_COLORS = {
   danger: '#EF4444',
   purple: '#8B5CF6',
   cyan: '#06B6D4',
-  pink: '#EC4899',
+  pink: '#F59E0B', /* amber-500 */
   lime: '#84CC16',
   gray: '#6B7280',
   indigo: '#6366F1',

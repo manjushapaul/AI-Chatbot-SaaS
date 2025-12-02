@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getTenantContext } from '@/lib/tenant';
 import { createTenantDB } from '@/lib/db';
+import { canPerformPaidAction } from '@/lib/trial-check';
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +53,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Name, type, and botId are required' },
         { status: 400 }
+      );
+    }
+
+    // Check if trial expired
+    const canPerform = await canPerformPaidAction(tenantContext.id);
+    if (!canPerform.allowed) {
+      return NextResponse.json(
+        { error: canPerform.reason || 'Trial expired. Please upgrade to continue.' },
+        { status: 403 }
       );
     }
 

@@ -147,7 +147,7 @@ const defaultAnalyticsData: AnalyticsData = {
   }
 };
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F59E0B', '#84CC16']; /* replaced pink with amber-500 */
 
 export default function AnalyticsPage() {
   const { theme } = useTheme();
@@ -284,7 +284,7 @@ export default function AnalyticsPage() {
   };
 
   const getChartColor = () => {
-    return theme === 'dark' ? '#825037' : '#F973B9';
+    return theme === 'dark' ? '#825037' : 'rgb(245, 158, 11)'; /* amber-500 */
   };
 
   const renderChart = () => {
@@ -672,14 +672,14 @@ export default function AnalyticsPage() {
                   <div className={`p-[2px] rounded-lg ${
                     theme === 'dark' 
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                      : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                      : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
                   }`}>
                     <button 
                       onClick={handleExport}
                       className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                         theme === 'dark'
                           ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                          : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                          : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                       }`}
                     >
                       <Download className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
@@ -689,12 +689,12 @@ export default function AnalyticsPage() {
                   <div className={`p-[2px] rounded-lg ${
                     theme === 'dark' 
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                      : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                      : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
                   }`}>
                     <button className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                       theme === 'dark'
                         ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                        : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                        : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                     }`}>
                       <Calendar className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
                       <span>Schedule Report</span>
@@ -703,12 +703,12 @@ export default function AnalyticsPage() {
                   <div className={`p-[2px] rounded-lg ${
                     theme === 'dark' 
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                      : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                      : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
                   }`}>
                     <button className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                       theme === 'dark'
                         ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                        : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                        : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                     }`}>
                       <AlertCircle className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
                       <span>Set Alerts</span>
@@ -717,14 +717,14 @@ export default function AnalyticsPage() {
                   <div className={`p-[2px] rounded-lg ${
                     theme === 'dark' 
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                      : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                      : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
                   }`}>
                     <button 
                       onClick={() => setShowRealTime(!showRealTime)}
                       className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                         theme === 'dark'
                           ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                          : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                          : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                       }`}
                     >
                       {showRealTime ? (

@@ -208,7 +208,7 @@ export default function WidgetsPage() {
                 <p className={typography.sectionTitle}>Total Usage</p>
                 <p className="text-2xl font-bold text-gray-900">{totalUsage.toLocaleString()}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-gray-700" />
               </div>
             </div>

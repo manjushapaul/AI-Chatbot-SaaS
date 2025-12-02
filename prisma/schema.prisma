@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,365 +7,273 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Tenant management
-model Tenant {
-  id          String   @id @default(cuid())
+model api_keys {
+  id          String    @id
   name        String
-  subdomain   String   @unique
-  customDomain String?
-  plan        Plan     @default(FREE)
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  users       User[]
-  bots        Bot[]
-  conversations Conversation[]
-  knowledgeBases KnowledgeBase[]
-  widgets     Widget[]
-  apiKeys     ApiKey[]
-  subscriptions Subscription[]
-  billingHistory BillingHistory[]
-  apiUsage    APIUsage[]
-  notifications Notification[]
-
-  @@map("tenants")
-}
-
-// User management with multi-tenancy
-model User {
-  id        String   @id @default(cuid())
-  email     String
-  name      String?
-  password  String?  // Hashed password for authentication
-  role      UserRole @default(USER)
-  status    Status   @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Tenant relationship
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relationships
-  conversations Conversation[]
-  apiKeys     ApiKey[]
-  notifications Notification[]
-  notificationPreferences NotificationPreference[]
-
-  @@unique([email, tenantId])
-  @@map("users")
-}
-
-// Bot configurations
-model Bot {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  avatar      String?
-  personality String?
-  model       String   @default("gpt-3.5-turbo")
-  temperature Float    @default(0.7)
-  maxTokens   Int      @default(1000)
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Tenant relationship
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relationships
-  conversations Conversation[]
-  knowledgeBases KnowledgeBase[]
-  widgets      Widget[]
-
-  @@map("bots")
-}
-
-// Knowledge base management
-model KnowledgeBase {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Tenant relationship
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Bot relationship
-  botId       String
-  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
-
-  // Relationships
-  documents   Document[]
-  faqs        FAQ[]
-
-  @@map("knowledge_bases")
-}
-
-// Document storage for knowledge base
-model Document {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  type        DocumentType
-  url         String?
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Knowledge base relationship
-  knowledgeBaseId String
-  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
-
-  // Vector embeddings (stored as JSON for flexibility)
-  embeddings  Json?
-
-  @@map("documents")
-}
-
-// FAQ management
-model FAQ {
-  id          String   @id @default(cuid())
-  question    String
-  answer      String
-  category    String?
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Knowledge base relationship
-  knowledgeBaseId String
-  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
-
-  @@map("faqs")
-}
-
-// Widget configurations
-model Widget {
-  id          String   @id @default(cuid())
-  name        String
-  type        WidgetType
-  config      Json
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Tenant relationship
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Bot relationship
-  botId       String
-  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
-
-  @@map("widgets")
-}
-
-// API key management
-model ApiKey {
-  id          String   @id @default(cuid())
-  name        String
-  key         String   @unique
+  key         String    @unique
   permissions Json
   lastUsed    DateTime?
   expiresAt   DateTime?
-  status      Status   @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Tenant relationship
+  status      Status    @default(ACTIVE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // User relationship
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("api_keys")
+  tenants     tenants   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Subscription management
-model Subscription {
-  id                    String              @id @default(cuid())
-  tenantId              String              @unique
-  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  // Plan information
-  plan                  Plan                @default(FREE)
-  previousPlan          Plan?
-  
-  // Stripe integration
-  stripeCustomerId      String?
-  stripeSubscriptionId  String?
-  stripePriceId         String?
-  
-  // Subscription status
-  status                SubscriptionStatus  @default(ACTIVE)
-  
-  // Billing cycle
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  cancelAtPeriodEnd     Boolean             @default(false)
-  
-  // Usage tracking
-  monthlyUsage          Json                @default("{}") // Store usage metrics as JSON
-  
-  // Metadata
-  metadata              Json?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-
-  @@map("subscriptions")
+model api_usage {
+  id             String         @id
+  tenantId       String
+  endpoint       String
+  method         String
+  statusCode     Int
+  responseTime   Int
+  tokensUsed     Int?
+  model          String?
+  userId         String?
+  botId          String?
+  conversationId String?
+  metadata       Json?
+  timestamp      DateTime       @default(now())
+  conversations  conversations? @relation(fields: [conversationId], references: [id])
+  tenants        tenants        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
-// Billing history and invoices
-model BillingHistory {
-  id                    String              @id @default(cuid())
+model billing_history {
+  id                    String          @id
   tenantId              String
-  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  // Invoice details
-  invoiceNumber         String              @unique
+  invoiceNumber         String          @unique
   amount                Float
-  currency              String              @default("USD")
-  
-  // Stripe integration
+  currency              String          @default("USD")
   stripeInvoiceId       String?
   stripePaymentIntentId String?
-  
-  // Status
-  status                InvoiceStatus       @default(PENDING)
-  
-  // Billing period
+  status                InvoiceStatus   @default(PENDING)
   billingPeriodStart    DateTime
   billingPeriodEnd      DateTime
-  
-  // Plan information
   plan                  Plan
   planChange            PlanChangeType?
-  
-  // Metadata
   description           String?
   metadata              Json?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-
-  @@map("billing_history")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime
+  tenants               tenants         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
-// API usage tracking
-model APIUsage {
-  id                    String              @id @default(cuid())
-  tenantId              String
-  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  // Request details
-  endpoint              String
-  method                String
-  statusCode            Int
-  responseTime          Int                 // in milliseconds
-  
-  // Usage metrics
-  tokensUsed            Int?
-  model                 String?
-  
-  // Metadata
-  userId                String?
-  botId                 String?
-  conversationId        String?
-  conversation          Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  metadata              Json?
-  
-  // Timestamp
-  timestamp             DateTime            @default(now())
-
-  @@map("api_usage")
+model bots {
+  id              String            @id
+  name            String
+  description     String?
+  avatar          String?
+  personality     String?
+  model           String            @default("gpt-3.5-turbo")
+  temperature     Float             @default(0.7)
+  maxTokens       Int               @default(1000)
+  status          Status            @default(ACTIVE)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  tenantId        String
+  config          Json?
+  tenants         tenants           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversations   conversations[]
+  knowledge_bases knowledge_bases[]
+  widgets         widgets[]
 }
 
-// Conversation management
-model Conversation {
-  id          String              @id @default(cuid())
-  tenantId    String
-  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  // User and Bot relationships
-  userId      String
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botId       String
-  bot         Bot                 @relation(fields: [botId], references: [id], onDelete: Cascade)
-  
-  // Conversation details
-  status      ConversationStatus  @default(ACTIVE)
-  title       String?             // Auto-generated from first message
-  metadata    Json?               // Additional conversation data
-  
-  // Usage tracking
-  totalTokens Int                 @default(0)
-  totalCost   Float               @default(0.0)
-  messageCount Int                @default(0)
-  
-  // Timestamps
-  startedAt   DateTime            @default(now())
-  lastMessageAt DateTime          @updatedAt
-  closedAt    DateTime?
-  
-  // Relationships
-  messages    Message[]
-  apiUsage    APIUsage[]
-  
-  @@map("conversations")
+model conversations {
+  id            String             @id
+  status        ConversationStatus @default(ACTIVE)
+  tenantId      String
+  botId         String
+  userId        String
+  closedAt      DateTime?
+  lastMessageAt DateTime
+  messageCount  Int                @default(0)
+  metadata      Json?
+  startedAt     DateTime           @default(now())
+  title         String?
+  totalCost     Float              @default(0.0)
+  totalTokens   Int                @default(0)
+  api_usage     api_usage[]
+  bots          bots               @relation(fields: [botId], references: [id], onDelete: Cascade)
+  tenants       tenants            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users         users              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      messages[]
 }
 
-// Individual messages within conversations
-model Message {
-  id              String          @id @default(cuid())
-  conversationId  String
-  conversation    Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  // Message content
-  role            MessageRole
-  content         String          @db.Text
-  tokens          Int             @default(0)
-  cost            Float           @default(0.0)
-  
-  // AI-specific fields
-  model           String?         // AI model used
-  responseTime    Int?            // Response time in milliseconds
-  metadata        Json?           // Additional message data
-  
-  // Timestamps
+model documents {
+  id              String          @id
+  title           String
+  content         String
+  type            DocumentType
+  url             String?
+  status          Status          @default(ACTIVE)
   createdAt       DateTime        @default(now())
-  
-  @@map("messages")
+  updatedAt       DateTime
+  knowledgeBaseId String
+  embeddings      Json?
+  knowledge_bases knowledge_bases @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
 }
 
-// Enums
-enum Plan {
-  FREE
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-  WHITE_LABEL
+model faqs {
+  id              String          @id
+  question        String
+  answer          String
+  category        String?
+  status          Status          @default(ACTIVE)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  knowledgeBaseId String
+  knowledge_bases knowledge_bases @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
 }
 
-enum Status {
+model knowledge_bases {
+  id          String      @id
+  name        String
+  description String?
+  status      Status      @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  tenantId    String
+  botId       String
+  documents   documents[]
+  faqs        faqs[]
+  bots        bots        @relation(fields: [botId], references: [id], onDelete: Cascade)
+  tenants     tenants     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model messages {
+  id             String        @id
+  content        String
+  role           MessageRole
+  metadata       Json?
+  conversationId String
+  cost           Float         @default(0.0)
+  createdAt      DateTime      @default(now())
+  model          String?
+  responseTime   Int?
+  tokens         Int           @default(0)
+  conversations  conversations @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model notification_preferences {
+  id              String                @id
+  userId          String
+  category        NotificationCategory
+  inAppEnabled    Boolean               @default(true)
+  emailEnabled    Boolean               @default(false)
+  smsEnabled      Boolean               @default(false)
+  frequency       NotificationFrequency @default(REALTIME)
+  quietHoursStart String?
+  quietHoursEnd   String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime
+  users           users                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category])
+}
+
+model notifications {
+  id        String               @id
+  userId    String
+  tenantId  String
+  type      NotificationType
+  title     String
+  message   String
+  category  NotificationCategory
+  priority  NotificationPriority @default(MEDIUM)
+  actionUrl String?
+  metadata  Json?
+  isRead    Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  readAt    DateTime?
+  tenants   tenants              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users     users                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+}
+
+model subscriptions {
+  id                   String             @id
+  tenantId             String             @unique
+  plan                 Plan               @default(FREE)
+  previousPlan         Plan?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  monthlyUsage         Json               @default("{}")
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime
+  trialEndsAt          DateTime?
+  isTrialExpired       Boolean            @default(false)
+  tenants              tenants            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model tenants {
+  id              String            @id
+  name            String
+  subdomain       String            @unique
+  customDomain    String?
+  plan            Plan              @default(FREE)
+  status          Status            @default(ACTIVE)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  api_keys        api_keys[]
+  api_usage       api_usage[]
+  billing_history billing_history[]
+  bots            bots[]
+  conversations   conversations[]
+  knowledge_bases knowledge_bases[]
+  notifications   notifications[]
+  subscriptions   subscriptions?
+  users           users[]
+  widgets         widgets[]
+}
+
+model users {
+  id                       String                     @id
+  email                    String
+  name                     String?
+  password                 String?
+  role                     UserRole                   @default(USER)
+  status                   Status                     @default(ACTIVE)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime
+  tenantId                 String
+  api_keys                 api_keys[]
+  conversations            conversations[]
+  notification_preferences notification_preferences[]
+  notifications            notifications[]
+  tenants                  tenants                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([email, tenantId])
+}
+
+model widgets {
+  id        String     @id
+  name      String
+  type      WidgetType
+  config    Json
+  status    Status     @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  tenantId  String
+  botId     String
+  bots      bots       @relation(fields: [botId], references: [id], onDelete: Cascade)
+  tenants   tenants    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum ConversationStatus {
   ACTIVE
-  INACTIVE
-  SUSPENDED
-  DELETED
-}
-
-enum UserRole {
-  SUPER_ADMIN
-  TENANT_ADMIN
-  USER
-  BOT_OPERATOR
+  CLOSED
+  ARCHIVED
 }
 
 enum DocumentType {
@@ -380,34 +285,6 @@ enum DocumentType {
   JSON
 }
 
-enum ConversationStatus {
-  ACTIVE
-  CLOSED
-  ARCHIVED
-}
-
-enum MessageRole {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
-enum WidgetType {
-  CHAT_WIDGET
-  POPUP
-  EMBEDDED
-  FLOATING
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  INACTIVE
-  PAST_DUE
-  CANCELED
-  TRIALING
-  UNPAID
-}
-
 enum InvoiceStatus {
   PENDING
   PAID
@@ -416,67 +293,10 @@ enum InvoiceStatus {
   REFUNDED
 }
 
-enum PlanChangeType {
-  UPGRADE
-  DOWNGRADE
-  CANCELLATION
-  REACTIVATION
-}
-
-// Notification system
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  type        NotificationType
-  title       String
-  message     String   @db.Text
-  category    NotificationCategory
-  priority    NotificationPriority @default(MEDIUM)
-  actionUrl   String?
-  metadata    Json?
-  
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  readAt      DateTime?
-  
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-  @@map("notifications")
-}
-
-model NotificationPreference {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  category        NotificationCategory
-  inAppEnabled    Boolean  @default(true)
-  emailEnabled    Boolean  @default(false)
-  smsEnabled      Boolean  @default(false)
-  frequency       NotificationFrequency @default(REALTIME)
-  quietHoursStart String?
-  quietHoursEnd   String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@unique([userId, category])
-  @@map("notification_preferences")
-}
-
-enum NotificationType {
-  BOT_ACTIVITY
+enum MessageRole {
+  USER
+  ASSISTANT
   SYSTEM
-  METRICS
-  TEAM
-  BILLING
-  SECURITY
-  KB
-  WIDGET
 }
 
 enum NotificationCategory {
@@ -490,6 +310,12 @@ enum NotificationCategory {
   widget
 }
 
+enum NotificationFrequency {
+  REALTIME
+  HOURLY_DIGEST
+  DAILY_DIGEST
+}
+
 enum NotificationPriority {
   LOW
   MEDIUM
@@ -497,8 +323,58 @@ enum NotificationPriority {
   CRITICAL
 }
 
-enum NotificationFrequency {
-  REALTIME
-  HOURLY_DIGEST
-  DAILY_DIGEST
-} 
+enum NotificationType {
+  BOT_ACTIVITY
+  SYSTEM
+  METRICS
+  TEAM
+  BILLING
+  SECURITY
+  KB
+  WIDGET
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  WHITE_LABEL
+}
+
+enum PlanChangeType {
+  UPGRADE
+  DOWNGRADE
+  CANCELLATION
+  REACTIVATION
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  UNPAID
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  USER
+  BOT_OPERATOR
+}
+
+enum WidgetType {
+  CHAT_WIDGET
+  POPUP
+  EMBEDDED
+  FLOATING
+}

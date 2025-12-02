@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get bot and validate it exists and is active
-    const bot = await prisma.bot.findFirst({
+    const bot = await (prisma as any).bots.findFirst({
       where: { 
         id: botId,
         status: 'ACTIVE'
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     
     if (conversationId) {
       // Get existing conversation
-      conversation = await prisma.conversation.findFirst({
+      conversation = await (prisma as any).conversations.findFirst({
         where: { 
           id: conversationId,
           botId: botId
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       // For public chats, we need a userId. We'll use the bot's tenant's first admin user
       // or create a system user if none exists
       let userId: string;
-      const tenantUser = await prisma.user.findFirst({
+      const tenantUser = await (prisma as any).users.findFirst({
         where: { tenantId: bot.tenantId },
         orderBy: { createdAt: 'asc' }
       });
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Create a system user for public chats if no users exist
         try {
-          const systemUser = await prisma.user.create({
+          const systemUser = await (prisma as any).users.create({
             data: {
               email: `system@${bot.tenantId}.public`,
               name: 'Public Chat User',
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         } catch (userError) {
           console.error('Error creating system user:', userError);
           // If user creation fails (e.g., unique constraint), try to find any user
-          const fallbackUser = await prisma.user.findFirst({
+          const fallbackUser = await (prisma as any).users.findFirst({
             where: { tenantId: bot.tenantId }
           });
           if (!fallbackUser) {
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       }
       
       const sessionId = `public_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      conversation = await prisma.conversation.create({
+      conversation = await (prisma as any).conversations.create({
         data: {
           userId,
           botId,
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Basic rate limiting - check conversation count in last hour for this bot
-    const recentConversations = await prisma.conversation.count({
+    const recentConversations = await (prisma as any).conversations.count({
       where: {
         botId: botId,
         startedAt: {
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     // Store the user message and bot response in the conversation
     try {
-      await prisma.message.createMany({
+      await (prisma as any).messages.createMany({
         data: [
           {
             content: message,
@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get conversation and validate it belongs to the bot
-    const conversation = await prisma.conversation.findFirst({
+    const conversation = await (prisma as any).conversations.findFirst({
       where: { 
         id: conversationId,
         botId: botId

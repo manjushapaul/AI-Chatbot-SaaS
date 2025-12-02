@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getTenantContext } from '@/lib/tenant';
 import { createTenantDB } from '@/lib/db';
 
 export async function GET(
@@ -9,27 +8,47 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('[KB GET] Starting request');
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
+      console.log('[KB GET] Unauthorized - no session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await getTenantContext();
-    if (!tenant) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
+    // Get tenant ID from session (most reliable)
+    const tenantId = session.user.tenantId;
+    
+    if (!tenantId) {
+      console.log('[KB GET] Tenant not found - no tenant ID in session');
+      return NextResponse.json({ error: 'Tenant not found. Please ensure you are logged in.' }, { status: 401 });
     }
+    
+    console.log('[KB GET] Tenant ID from session:', tenantId);
 
     const { id } = await params;
-    const db = createTenantDB(tenant.id);
+    console.log('[KB GET] Knowledge base ID:', id, 'Tenant ID:', tenantId);
+    
+    if (!id) {
+      console.error('[KB GET] Missing knowledge base ID in route params');
+      return NextResponse.json({ error: 'Knowledge base ID is required' }, { status: 400 });
+    }
+
+    const db = createTenantDB(tenantId);
     const knowledgeBases = await db.getKnowledgeBases();
     const knowledgeBase = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     
     if (!knowledgeBase) {
+      console.log('[KB GET] Knowledge base not found for ID:', id);
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
+    
+    console.log('[KB GET] Knowledge base found:', knowledgeBase.name);
+    console.log(`[KB GET] KB has ${knowledgeBase.documents?.length || 0} documents from getKnowledgeBases query`);
 
     // Get documents for this knowledge base (use the separate method to ensure we get all documents)
     let documents = await db.getDocumentsByKnowledgeBase(id);
+    console.log(`[KB GET] getDocumentsByKnowledgeBase returned ${documents.length} documents`);
     
     // If getDocumentsByKnowledgeBase returns empty but knowledgeBase has documents, use those
     // This handles cases where the separate query might have filtering issues
@@ -63,9 +82,15 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Knowledge base fetch error:', error);
+    console.error('[KB GET] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[KB GET] Error details:', { message: errorMessage, stack: errorStack });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }
@@ -81,9 +106,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await getTenantContext();
-    if (!tenant) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
+    // Get tenant ID from session (most reliable)
+    const tenantId = session.user.tenantId;
+    
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Tenant not found. Please ensure you are logged in.' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -93,7 +120,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const db = createTenantDB(tenant.id);
+    const db = createTenantDB(tenantId);
     
     // Verify knowledge base exists and belongs to tenant
     const knowledgeBases = await db.getKnowledgeBases();
@@ -128,28 +155,49 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('[KB DELETE] Starting request');
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
+      console.log('[KB DELETE] Unauthorized - no session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await getTenantContext();
-    if (!tenant) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 });
+    // Get tenant ID from session (most reliable)
+    const tenantId = session.user.tenantId;
+    
+    if (!tenantId) {
+      console.log('[KB DELETE] Tenant not found - no tenant ID in session');
+      return NextResponse.json({ error: 'Tenant not found. Please ensure you are logged in.' }, { status: 401 });
     }
+    
+    console.log('[KB DELETE] Tenant ID from session:', tenantId);
 
     const { id } = await params;
-    const db = createTenantDB(tenant.id);
+    console.log('[KB DELETE] Knowledge base ID:', id, 'Tenant ID:', tenantId);
+    
+    if (!id) {
+      console.error('[KB DELETE] Missing knowledge base ID in route params');
+      return NextResponse.json({ error: 'Knowledge base ID is required' }, { status: 400 });
+    }
+
+    const db = createTenantDB(tenantId);
     
     // Verify knowledge base exists and belongs to tenant
+    console.log('[KB DELETE] Verifying knowledge base exists...');
     const knowledgeBases = await db.getKnowledgeBases();
     const existingKB = knowledgeBases.find((kb: { id: string }) => kb.id === id);
     if (!existingKB) {
+      console.log('[KB DELETE] Knowledge base not found for ID:', id);
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
+    console.log(`[KB DELETE] Deleting knowledge base: "${existingKB.name}" (${id})`);
+    
     // Delete knowledge base
     await db.deleteKnowledgeBase(id);
+
+    console.log('[KB DELETE] Knowledge base deleted successfully');
 
     return NextResponse.json({
       success: true,
@@ -157,9 +205,15 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Knowledge base deletion error:', error);
+    console.error('[KB DELETE] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[KB DELETE] Error details:', { message: errorMessage, stack: errorStack });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }

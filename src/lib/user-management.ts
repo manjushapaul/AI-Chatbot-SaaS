@@ -32,7 +32,7 @@ export class UserManagementService {
    */
   async getTeamMembers(tenantId: string): Promise<TeamMember[]> {
     try {
-      const users = await prisma.user.findMany({
+      const users = await (prisma as any).users.findMany({
         where: { tenantId },
         select: {
           id: true,
@@ -66,7 +66,7 @@ export class UserManagementService {
    */
   async getTeamStats(tenantId: string): Promise<TeamStats> {
     try {
-      const users = await prisma.user.findMany({
+      const users = await (prisma as any).users.findMany({
         where: { tenantId },
         select: {
           status: true,
@@ -106,7 +106,7 @@ export class UserManagementService {
   ): Promise<void> {
     try {
       // Check if user exists and belongs to tenant
-      const user = await prisma.user.findFirst({
+      const user = await (prisma as any).users.findFirst({
         where: { 
           id: userId,
           tenantId 
@@ -118,7 +118,7 @@ export class UserManagementService {
       }
 
       // Check if updater has permission
-      const updater = await prisma.user.findFirst({
+      const updater = await (prisma as any).users.findFirst({
         where: { 
           id: updatedBy,
           tenantId 
@@ -130,7 +130,7 @@ export class UserManagementService {
       }
 
       // Update user role
-      await prisma.user.update({
+      await (prisma as any).users.update({
         where: { id: userId },
         data: { 
           role: newRole as 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'USER' | 'BOT_OPERATOR',
@@ -154,7 +154,7 @@ export class UserManagementService {
   ): Promise<void> {
     try {
       // Check if user exists and belongs to tenant
-      const user = await prisma.user.findFirst({
+      const user = await (prisma as any).users.findFirst({
         where: { 
           id: userId,
           tenantId 
@@ -166,7 +166,7 @@ export class UserManagementService {
       }
 
       // Check if suspender has permission
-      const suspender = await prisma.user.findFirst({
+      const suspender = await (prisma as any).users.findFirst({
         where: { 
           id: suspendedBy,
           tenantId 
@@ -178,7 +178,7 @@ export class UserManagementService {
       }
 
       // Update user status
-      await prisma.user.update({
+      await (prisma as any).users.update({
         where: { id: userId },
         data: { 
           status: 'SUSPENDED',
@@ -201,7 +201,7 @@ export class UserManagementService {
   ): Promise<void> {
     try {
       // Check if user exists and belongs to tenant
-      const user = await prisma.user.findFirst({
+      const user = await (prisma as any).users.findFirst({
         where: { 
           id: userId,
           tenantId 
@@ -217,7 +217,7 @@ export class UserManagementService {
       }
 
       // Check if reactivator has permission
-      const reactivator = await prisma.user.findFirst({
+      const reactivator = await (prisma as any).users.findFirst({
         where: { 
           id: reactivatedBy,
           tenantId 
@@ -229,7 +229,7 @@ export class UserManagementService {
       }
 
       // Update user status
-      await prisma.user.update({
+      await (prisma as any).users.update({
         where: { id: userId },
         data: { 
           status: 'ACTIVE',
@@ -253,7 +253,7 @@ export class UserManagementService {
   ): Promise<void> {
     try {
       // Check if user exists and belongs to tenant
-      const user = await prisma.user.findFirst({
+      const user = await (prisma as any).users.findFirst({
         where: { 
           id: userId,
           tenantId 
@@ -265,7 +265,7 @@ export class UserManagementService {
       }
 
       // Check if remover has permission
-      const remover = await prisma.user.findFirst({
+      const remover = await (prisma as any).users.findFirst({
         where: { 
           id: removedBy,
           tenantId 
@@ -278,7 +278,7 @@ export class UserManagementService {
 
       // Check if user is the last admin
       if (user.role === 'TENANT_ADMIN') {
-        const adminCount = await prisma.user.count({
+        const adminCount = await (prisma as any).users.count({
           where: { 
             tenantId,
             role: 'TENANT_ADMIN',
@@ -292,7 +292,7 @@ export class UserManagementService {
       }
 
       // Soft delete user
-      await prisma.user.update({
+      await (prisma as any).users.update({
         where: { id: userId },
         data: { 
           status: 'DELETED',
@@ -310,14 +310,14 @@ export class UserManagementService {
    */
   async canAddUser(tenantId: string): Promise<{ allowed: boolean; reason?: string }> {
     try {
-      const currentUserCount = await prisma.user.count({
+      const currentUserCount = await (prisma as any).users.count({
         where: { 
           tenantId,
           status: { in: ['ACTIVE'] }
         }
       });
 
-      const tenant = await prisma.tenant.findUnique({
+      const tenant = await (prisma as any).tenants.findUnique({
         where: { id: tenantId }
       });
 

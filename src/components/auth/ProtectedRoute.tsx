@@ -33,7 +33,10 @@ export function ProtectedRoute({
     if (status === 'loading') return;
 
     if (!session) {
-      router.push('/auth');
+      // Get current pathname for redirect
+      const currentPath = window.location.pathname;
+      const redirectUrl = `/auth/signin?callbackUrl=${encodeURIComponent(currentPath)}`;
+      router.push(redirectUrl);
       return;
     }
 
@@ -124,7 +127,7 @@ export function ProtectedRoute({
           )}
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 bg-gradient-to-r from-[#FFFCEB] via-[#F8EAFE] to-[#FFD6EF] text-gray-900 rounded-md hover:opacity-90 transition-colors"
+            className="px-4 py-2 bg-gradient-to-r from-amber-50 via-amber-100 to-amber-200 text-gray-900 rounded-md hover:opacity-90 transition-colors"
           >
             Go to Dashboard
           </button>

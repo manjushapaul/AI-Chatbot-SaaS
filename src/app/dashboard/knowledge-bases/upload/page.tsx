@@ -300,13 +300,13 @@ export default function KnowledgeBaseUploadPage() {
           <UploadCard
             icon={<Upload className="w-6 h-6" />}
             headline="Drop files here or click to browse"
-            helperText="Support for TXT, HTML, MARKDOWN, JSON, and DOCX files"
+            helperText="Support for DOCX, TXT, HTML, MARKDOWN, and JSON files"
             onFileSelect={(fileList) => {
               if (fileList) {
                 handleFileSelect(fileList);
               }
             }}
-            accept=".txt,.html,.htm,.md,.json,.docx"
+            accept=".docx,.txt,.html,.htm,.md,.json"
             multiple={true}
             useLargeTypography={true}
           />

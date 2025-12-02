@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getTenantContext } from '@/lib/tenant';
 import { createTenantDB } from '@/lib/db';
+import { canPerformPaidAction } from '@/lib/trial-check';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,9 +23,30 @@ export async function GET(request: NextRequest) {
     const db = createTenantDB(tenant.id);
     const knowledgeBases = await db.getKnowledgeBases(botId || undefined);
 
+    // Ensure document counts are accurate by fetching them separately if needed
+    const knowledgeBasesWithCounts = await Promise.all(
+      knowledgeBases.map(async (kb: { id: string; documents?: unknown[]; [key: string]: unknown }) => {
+        // If documents array is empty or missing, fetch count directly
+        if (!kb.documents || kb.documents.length === 0) {
+          const stats = await db.getKnowledgeBaseStats(kb.id).catch(() => ({ documentCount: 0, faqCount: 0 }));
+          return {
+            ...kb,
+            documents: [], // Ensure documents array exists
+            _documentCount: stats.documentCount, // Add count for debugging
+          };
+        }
+        return kb;
+      })
+    );
+
+    console.log(`[KB GET] Returning ${knowledgeBasesWithCounts.length} knowledge bases`);
+    knowledgeBasesWithCounts.forEach((kb: { id: string; name: string; documents?: unknown[]; _documentCount?: number }) => {
+      console.log(`[KB GET] KB "${kb.name}" (${kb.id}): ${kb.documents?.length || 0} docs (count: ${kb._documentCount || 'N/A'})`);
+    });
+
     return NextResponse.json({
       success: true,
-      data: knowledgeBases,
+      data: knowledgeBasesWithCounts,
     });
 
   } catch (error) {
@@ -52,6 +74,15 @@ export async function POST(request: NextRequest) {
 
     if (!name || !botId) {
       return NextResponse.json({ error: 'Name and botId are required' }, { status: 400 });
+    }
+
+    // Check if trial expired
+    const canPerform = await canPerformPaidAction(tenant.id);
+    if (!canPerform.allowed) {
+      return NextResponse.json(
+        { error: canPerform.reason || 'Trial expired. Please upgrade to continue.' },
+        { status: 403 }
+      );
     }
 
     const db = createTenantDB(tenant.id);

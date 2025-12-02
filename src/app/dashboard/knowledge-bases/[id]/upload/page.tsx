@@ -281,9 +281,9 @@ export default function CreateKnowledgeBasePage() {
           {/* Left Column - Document Upload */}
           <div className="space-y-6">
             {/* File Upload Area */}
-            <div className="bg-white/20 backdrop-blur-md rounded-lg border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors shadow-2xl">
+            <div className="bg-white/20 backdrop-blur-md rounded-lg border-2 border-dashed border-gray-300 p-8 text-center hover:border-amber-200 transition-colors shadow-2xl">
               <div
-                className={`${isDragOver ? 'border-blue-400 bg-accent-strong/50' : ''}`}
+                className={`${isDragOver ? 'border-amber-200 bg-accent-strong/50' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -293,7 +293,7 @@ export default function CreateKnowledgeBasePage() {
                   Drop files here or click to browse
                 </h3>
                 <p className="text-gray-500 mb-4">
-                  Support for TXT, HTML, MARKDOWN, JSON, and DOCX files
+                  Support for DOCX, TXT, HTML, MARKDOWN, and JSON files
                 </p>
                 <label className="inline-flex items-center px-4 py-2 bg-accent-strong text-white rounded-lg hover:opacity-90 cursor-pointer">
                   <Upload className="h-4 w-4 mr-2" />
@@ -301,7 +301,7 @@ export default function CreateKnowledgeBasePage() {
                   <input
                     type="file"
                     multiple
-                    accept=".txt,.html,.htm,.md,.json,.docx"
+                    accept=".docx,.txt,.html,.htm,.md,.json"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -359,7 +359,7 @@ export default function CreateKnowledgeBasePage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="e.g., Product Documentation"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   />
                 </div>
@@ -372,7 +372,7 @@ export default function CreateKnowledgeBasePage() {
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     placeholder="Brief description of this knowledge base"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   />
                 </div>
@@ -383,7 +383,7 @@ export default function CreateKnowledgeBasePage() {
                   <select
                     value={formData.botId}
                     onChange={(e) => handleInputChange('botId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   >
                     <option value="">Select a bot</option>
@@ -419,7 +419,7 @@ export default function CreateKnowledgeBasePage() {
                     onChange={(e) => handleInputChange('chunkSize', parseInt(e.target.value))}
                     min="100"
                     max="2000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -436,7 +436,7 @@ export default function CreateKnowledgeBasePage() {
                     onChange={(e) => handleInputChange('chunkOverlap', parseInt(e.target.value))}
                     min="0"
                     max="500"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -454,7 +454,7 @@ export default function CreateKnowledgeBasePage() {
                     min="0"
                     max="2"
                     step="0.1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-accent-strong"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-200 focus:border-accent-strong"
                     disabled={isLoading}
                   />
                   <p className="text-xs text-gray-500 mt-1">

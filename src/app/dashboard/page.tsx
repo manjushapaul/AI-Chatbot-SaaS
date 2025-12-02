@@ -118,7 +118,7 @@ export default function DashboardPage() {
           <p className="text-red-600 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="bg-gradient-to-r from-[#FFFCEB] via-[#F8EAFE] to-[#FFD6EF] text-gray-900 px-4 py-2 rounded-lg hover:opacity-90"
+            className="bg-gradient-to-r from-amber-50 via-amber-100 to-amber-200 text-gray-900 px-4 py-2 rounded-lg hover:opacity-90"
           >
             Retry
           </button>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                 <p className={typography.sectionTitle}>Knowledge Bases</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalKnowledgeBases}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
                 <Database className="w-6 h-6 text-gray-700" />
               </div>
             </div>
@@ -244,14 +244,14 @@ export default function DashboardPage() {
               <div className={`p-[2px] rounded-lg ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                  : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                  : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
               }`}>
                 <button 
                   onClick={() => router.push('/dashboard/bots/create')}
                   className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                     theme === 'dark'
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                      : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                      : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                   }`}
                 >
                   <Bot className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
@@ -261,14 +261,14 @@ export default function DashboardPage() {
               <div className={`p-[2px] rounded-lg ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                  : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                  : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
               }`}>
                 <button 
                   onClick={() => router.push('/dashboard/knowledge-bases/upload')}
                   className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                     theme === 'dark'
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                      : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                      : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                   }`}
                 >
                   <Database className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
@@ -278,14 +278,14 @@ export default function DashboardPage() {
               <div className={`p-[2px] rounded-lg ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                  : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                  : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
               }`}>
                 <button 
                   onClick={() => router.push('/dashboard/widgets/create')}
                   className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                     theme === 'dark'
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                      : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                      : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                   }`}
                 >
                   <Square className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
@@ -295,14 +295,14 @@ export default function DashboardPage() {
               <div className={`p-[2px] rounded-lg ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780]' 
-                  : 'bg-gradient-to-r from-[#FFD6EF] via-[#F8EAFE] to-[#FFFCEB]'
+                  : 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-50'
               }`}>
                 <button 
                   onClick={() => router.push('/dashboard/users')}
                   className={`w-full px-4 py-6 rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg text-sm font-medium flex items-center justify-center space-x-2 ${
                     theme === 'dark'
                       ? 'bg-gradient-to-r from-[#563517b3] via-[#825037b3] to-[#F5C06780] text-white'
-                      : 'bg-gradient-to-r from-[#FFB8D9] via-[#E8C5F8] to-[#FFE8B8] text-gray-900'
+                      : 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 text-gray-900'
                   }`}
                 >
                   <Users className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`} />
@@ -328,7 +328,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Bots Ready Chip */}
-          <div className="flex-1 bg-gradient-to-r from-pink-50 to-rose-50 rounded-full px-4 py-3 flex items-center space-x-3 shadow-md border border-pink-100/50">
+          <div className="flex-1 bg-gradient-to-r from-amber-50 to-amber-50 rounded-full px-4 py-3 flex items-center space-x-3 shadow-md border border-amber-100/50">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
               <MessageSquare className="w-5 h-5 text-blue-500" />
             </div>

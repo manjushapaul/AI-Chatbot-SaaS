@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { email, password, name, tenant } = signupSchema.parse(body);
 
     // Check if tenant subdomain already exists
-    const existingTenant = await prisma.tenant.findUnique({
+    const existingTenant = await (prisma as any).tenants.findUnique({
       where: { subdomain: tenant }
     });
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user email already exists globally
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await (prisma as any).users.findFirst({
       where: { email }
     });
 
@@ -40,12 +41,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new tenant
-    const newTenant = await prisma.tenant.create({
+    const tenantId = randomUUID().replace(/-/g, '');
+    const now = new Date();
+    const newTenant = await (prisma as any).tenants.create({
       data: {
+        id: tenantId,
         name: name.split(' ')[0] + "'s Organization", // Use first name for organization
         subdomain: tenant,
         plan: 'FREE', // Start with free plan
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        createdAt: now,
+        updatedAt: now,
       }
     });
 
@@ -53,14 +59,18 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user as tenant admin
-    const user = await prisma.user.create({
+    const userId = randomUUID().replace(/-/g, '');
+    const user = await (prisma as any).users.create({
       data: {
+        id: userId,
         email,
         name,
         password: hashedPassword,
         tenantId: newTenant.id,
         role: 'TENANT_ADMIN', // Make first user the admin
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        createdAt: now,
+        updatedAt: now,
       },
       select: {
         id: true,
@@ -73,14 +83,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Create initial subscription record for the tenant
-    await prisma.subscription.create({
+    const subscriptionId = randomUUID().replace(/-/g, '');
+    await (prisma as any).subscriptions.create({
       data: {
+        id: subscriptionId,
         tenantId: newTenant.id,
         plan: 'FREE',
         status: 'ACTIVE',
-        currentPeriodStart: new Date(),
+        currentPeriodStart: now,
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        cancelAtPeriodEnd: false
+        cancelAtPeriodEnd: false,
+        createdAt: now,
+        updatedAt: now,
       }
     });
 

@@ -22,18 +22,19 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 45 100% 77%; /* amber-200 */
     --radius: 0.5rem;
   }
 
   /* Theme CSS Variables */
   :root[data-theme='light'] {
-    --accent-strong: #e501aee6; /* existing pink */
-    --accent-soft: #F973B9;
-    --bg-body-from: #ffffff;
-    --bg-body-via: #F7EAFB;
-    --bg-body-to: #FDEFF6;
-    --chart-primary: #F973B9; /* pink for charts */
+    --accent-strong: rgb(245, 158, 11); /* amber-500 */
+    --accent-soft: rgb(251, 191, 36); /* amber-400 */
+    --bg-body-from: #fff7eb;
+    --bg-body-via: #ffe9d2;
+    --bg-body-to: #fff7eb;
+    --chart-primary: rgb(245, 158, 11); /* amber-500 for charts */
+    --ring: 45 100% 77%; /* amber-200 */
   }
 
   :root[data-theme='dark'] {
@@ -43,6 +44,7 @@
     --bg-body-via: #5635171c;
     --bg-body-to: #56351794;
     --chart-primary: #825037; /* coffee brown for charts */
+    --ring: 224.3 76.3% 94.1%; /* original dark theme ring color */
   }
 }
 
@@ -51,7 +53,7 @@
     background-color: var(--accent-strong);
   }
   .bg-accent-strong-50 {
-    background-color: color-mix(in srgb, var(--accent-strong) 50%, transparent);
+    background-color: color-mix(in srgb, var(--accent-strong) 70%, transparent);
   }
   .bg-accent-soft {
     background-color: var(--accent-soft);
@@ -80,6 +82,10 @@
   .ring-accent-soft {
     --tw-ring-color: var(--accent-soft);
   }
+  
+  :root[data-theme='light'] .ring-accent-soft {
+    --tw-ring-color: rgb(253, 230, 138); /* amber-200 for light theme */
+  }
   .ring-accent-strong {
     --tw-ring-color: var(--accent-strong);
   }
@@ -105,13 +111,16 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --ring: 45 100% 77%; /* amber-200 */
   }
 }
 
 @layer base {
   * {
     border-color: hsl(var(--border));
+  }
+  html {
+    scroll-behavior: smooth;
   }
   body {
     background: linear-gradient(to bottom, var(--bg-body-from), var(--bg-body-via), var(--bg-body-to));
@@ -395,7 +404,18 @@
   select:focus,
   textarea:focus {
     @apply outline-none border-white/50 shadow-md;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-soft) 20%, transparent);
+    box-shadow: 0 0 0 2px rgba(253, 230, 138, 0.4); /* amber-200 with 40% opacity */
+  }
+  
+  :root[data-theme='light'] input[type="text"]:focus,
+  :root[data-theme='light'] input[type="email"]:focus,
+  :root[data-theme='light'] input[type="password"]:focus,
+  :root[data-theme='light'] input[type="number"]:focus,
+  :root[data-theme='light'] input[type="url"]:focus,
+  :root[data-theme='light'] input[type="tel"]:focus,
+  :root[data-theme='light'] select:focus,
+  :root[data-theme='light'] textarea:focus {
+    box-shadow: 0 0 0 2px rgba(253, 230, 138, 0.4); /* amber-200 with 40% opacity */
   }
 
   input[type="text"]:hover,
@@ -444,4 +464,31 @@ display: none;
 
 .notification-scrollbar::-webkit-scrollbar-thumb:active {
   background: color-mix(in srgb, var(--accent-soft) 90%, transparent);
+}
+
+/* Floating animation for 3D character and coins */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
 }
