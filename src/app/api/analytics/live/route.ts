@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       // Total messages today
       (prisma as any).messages.count({
         where: {
-          conversation: {
+          conversations: {
             tenantId,
             startedAt: {
               gte: new Date(new Date().setHours(0, 0, 0, 0)) // Today
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       // Average response time (last 24 hours)
       (prisma as any).messages.aggregate({
         where: {
-          conversation: {
+          conversations: {
             tenantId,
             startedAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours

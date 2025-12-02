@@ -20,7 +20,11 @@ type ConversationWithMessages = {
     createdAt: Date;
     conversationId: string;
   }>;
-  bot: {
+  bots?: {
+    id: string;
+    name: string;
+  };
+  bot?: {
     id: string;
     name: string;
   };
@@ -94,7 +98,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         messages: true,
-        bot: true,
+        bots: true,
       },
     });
 
