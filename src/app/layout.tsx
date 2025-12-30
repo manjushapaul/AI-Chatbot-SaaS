@@ -27,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable}
          ${geistMono.variable} antialiased bg-gradient-to-b
           from-[var(--bg-body-from)] via-[var(--bg-body-via)] to-[var(--bg-body-to)]
