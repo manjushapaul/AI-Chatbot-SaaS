@@ -15,7 +15,7 @@ function HowItWorksSteps() {
     {
       number: '01',
       title: 'Connect your knowledge',
-      description: 'Upload PDFs, docs, FAQs, or URLs and we index them into a searchable knowledge base.',
+      description: 'Upload docs, FAQs, or URLs and we index them into a searchable knowledge base.',
     },
     {
       number: '02',
