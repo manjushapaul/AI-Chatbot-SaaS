@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { typography } from '@/lib/design-tokens';
 
-export default function AuthErrorPage() {
+export default function AuthErrorPage(): React.JSX.Element {
   const searchParams = useSearchParams();
-  const error = searchParams.get('error');
+  const error: string | null = searchParams.get('error');
 
   const getErrorMessage = (error: string | null): string => {
     if (!error) return 'An unknown error occurred';
