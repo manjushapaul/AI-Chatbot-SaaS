@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { prisma } from './lib/db';
 
 // Protected paths that require authentication
 const PROTECTED_PATHS = ['/dashboard'];
@@ -53,53 +52,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check trial expiration for authenticated users
-    if (token.tenantId && !isPublic) {
-      try {
-        const subscription = await prisma.subscriptions.findUnique({
-          where: { tenantId: token.tenantId as string }
-        });
-
-        if (subscription) {
-          const now = new Date();
-          const isExpired = subscription.trialEndsAt && subscription.trialEndsAt <= now;
-          
-          console.log('[Middleware] Trial check:', {
-            tenantId: token.tenantId,
-            status: subscription.status,
-            trialEndsAt: subscription.trialEndsAt,
-            isTrialExpired: subscription.isTrialExpired,
-            isExpired,
-            pathname
-          });
-          
-          // Update isTrialExpired flag if needed
-          if (isExpired && !subscription.isTrialExpired) {
-            await prisma.subscriptions.update({
-              where: { id: subscription.id },
-              data: { isTrialExpired: true }
-            });
-          }
-
-          // Redirect to expired page if trial expired and status is TRIALING
-          if (isExpired && subscription.status === 'TRIALING' && pathname !== '/billing/expired') {
-            console.log('[Middleware] Redirecting to /billing/expired');
-            const expiredUrl = new URL('/billing/expired', request.url);
-            return NextResponse.redirect(expiredUrl);
-          }
-        } else {
-          console.log('[Middleware] No subscription found for tenantId:', token.tenantId);
-        }
-      } catch (error) {
-        console.error('[Middleware] Error checking trial expiration:', error);
-        // Continue if check fails - don't block access
-      }
-    } else {
-      console.log('[Middleware] Skipping trial check:', { 
-        hasTenantId: !!token.tenantId, 
-        isPublic, 
-        pathname 
-      });
-    }
+    // Note: Prisma cannot be used in Edge Runtime middleware
+    // This check is moved to API routes or server components instead
+    // For now, we skip this check in middleware to avoid Edge Runtime issues
   }
 
   // Continue with tenant extraction for authenticated or public routes
