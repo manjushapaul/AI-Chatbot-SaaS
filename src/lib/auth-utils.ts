@@ -92,7 +92,7 @@ export function canManageKnowledge(userRole: string): boolean {
 }
 
 export async function validateUserAccess(userId: string, tenantId: string): Promise<boolean> {
-  const user = await (prisma as any).users.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: userId },
     select: { tenantId: true, status: true }
   });
