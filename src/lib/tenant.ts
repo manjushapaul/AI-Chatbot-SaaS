@@ -85,7 +85,7 @@ export function getTenantFromRequest(request: Request): TenantContext | null {
     if (hostParts.length < 2) return null;
     
     const subdomain = hostParts[0];
-    const _domain = hostParts.slice(1).join('.');
+    const domain = hostParts.slice(1).join('.');
     
     if (subdomain === 'www' || subdomain === 'app') return null;
     

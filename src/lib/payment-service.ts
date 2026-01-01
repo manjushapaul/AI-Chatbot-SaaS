@@ -57,8 +57,8 @@ export class PaymentService {
       return paymentMethods.map(pm => ({
         id: pm.id,
         type: pm.type,
-        card: pm.card as PaymentMethod['card'],
-        billingDetails: pm.billingDetails as PaymentMethod['billingDetails']
+        card: pm.card,
+        billingDetails: pm.billingDetails
       }));
     } catch (error) {
       console.error('Error getting payment methods:', error);
@@ -110,23 +110,23 @@ export class PaymentService {
       const invoices = await stripeService.getCustomerInvoices(customerId, limit);
       
       // Enhance with local billing history data
-      const localInvoices = await prisma.billing_history.findMany({
+      const localInvoices = await prisma.billingHistory.findMany({
         where: { tenantId: customerId },
         orderBy: { createdAt: 'desc' },
         take: limit
       });
 
       // Combine Stripe invoices with local billing history
-      const allInvoices = [...invoices, ...localInvoices.map((local) => ({
+      const allInvoices = [...invoices, ...localInvoices.map((local: { id: string; amount: number; [key: string]: unknown }) => ({
         id: local.id,
-        number: local.invoiceNumber || '',
+        number: local.invoiceNumber,
         amount: local.amount,
-        currency: local.currency || 'usd',
-        status: typeof local.status === 'string' ? local.status.toLowerCase() : String(local.status || 'unknown').toLowerCase(),
-        dueDate: local.billingPeriodEnd || new Date(),
+        currency: local.currency,
+        status: local.status.toLowerCase(),
+        dueDate: local.billingPeriodEnd,
         paid: local.status === 'PAID',
-        description: local.description || undefined,
-        metadata: (local.metadata as Record<string, unknown>) || undefined
+        description: local.description,
+        metadata: local.metadata
       }))];
 
       // Sort by date and return
@@ -159,7 +159,7 @@ export class PaymentService {
         };
       } catch (stripeError) {
         // If not found in Stripe, check local billing history
-        const localInvoice = await prisma.billing_history.findUnique({
+        const localInvoice = await prisma.billingHistory.findUnique({
           where: { id: invoiceId }
         });
 
@@ -169,11 +169,11 @@ export class PaymentService {
             number: localInvoice.invoiceNumber,
             amount: localInvoice.amount,
             currency: localInvoice.currency,
-            status: String(localInvoice.status).toLowerCase(),
+            status: localInvoice.status.toLowerCase(),
             dueDate: localInvoice.billingPeriodEnd,
             paid: localInvoice.status === 'PAID',
-            description: localInvoice.description || undefined,
-            metadata: (localInvoice.metadata as Record<string, unknown>) || undefined
+            description: localInvoice.description,
+            metadata: localInvoice.metadata
           };
         }
       }
@@ -227,18 +227,15 @@ export class PaymentService {
       
       // Record refund in local billing history
       if (amount) {
-        const refundId = crypto.randomUUID().replace(/-/g, '');
-        const now = new Date();
-        await prisma.billing_history.create({
+        await prisma.billingHistory.create({
           data: {
-            id: refundId,
             tenantId: 'system', // This should be the actual tenant ID
             invoiceNumber: `REFUND_${Date.now()}`,
             amount: -amount, // Negative amount for refunds
             currency: 'USD',
             status: 'REFUNDED',
-            billingPeriodStart: now,
-            billingPeriodEnd: now,
+            billingPeriodStart: new Date(),
+            billingPeriodEnd: new Date(),
             plan: 'FREE',
             description: `Refund for payment ${paymentIntentId}${reason ? ` - ${reason}` : ''}`,
             metadata: {
@@ -246,9 +243,7 @@ export class PaymentService {
               reason,
               refundAmount: amount,
               refundDate: new Date().toISOString()
-            },
-            createdAt: now,
-            updatedAt: now
+            }
           }
         });
       }
@@ -263,19 +258,19 @@ export class PaymentService {
    */
   async getPaymentHistory(customerId: string, limit: number = 20): Promise<PaymentHistory[]> {
     try {
-      const billingHistory = await prisma.billing_history.findMany({
+      const billingHistory = await prisma.billingHistory.findMany({
         where: { tenantId: customerId },
         orderBy: { createdAt: 'desc' },
         take: limit
       });
 
-      return billingHistory.map((record) => ({
+      return billingHistory.map((record: { id: string; amount: number; [key: string]: unknown }) => ({
         id: record.id,
         amount: record.amount,
         currency: record.currency,
-        status: String(record.status),
+        status: record.status,
         date: record.createdAt,
-        description: record.description || undefined,
+        description: record.description,
         invoiceId: record.id
       }));
     } catch (error) {

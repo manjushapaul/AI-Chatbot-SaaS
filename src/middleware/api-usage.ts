@@ -15,8 +15,8 @@ export async function withAPIUsageTracking(
   options: APIUsageMiddlewareOptions = {}
 ): Promise<NextResponse> {
   const {
-    trackResponseTime: _trackResponseTime = true,
-    trackTokens: _trackTokens = false,
+    trackResponseTime = true,
+    trackTokens = false,
     excludePaths = ['/_next', '/static', '/favicon.ico'],
     includePaths = []
   } = options;

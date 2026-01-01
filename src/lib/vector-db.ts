@@ -90,7 +90,7 @@ export class VectorDB {
           console.log('Pinecone index is ready');
           return;
         }
-      } catch (_error) {
+      } catch (error) {
         // Index not ready yet
       }
 

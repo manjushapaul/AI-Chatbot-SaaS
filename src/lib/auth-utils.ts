@@ -92,7 +92,7 @@ export function canManageKnowledge(userRole: string): boolean {
 }
 
 export async function validateUserAccess(userId: string, tenantId: string): Promise<boolean> {
-  const user = await prisma.users.findUnique({
+  const user = await (prisma as any).users.findUnique({
     where: { id: userId },
     select: { tenantId: true, status: true }
   });
@@ -118,7 +118,7 @@ export function getAuthRedirectUrl(role: string, tenantSubdomain: string): strin
 export function sanitizeAuthError(error: unknown): string {
   if (typeof error === 'string') return error;
   
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+  if (error?.message) {
     // Don't expose internal errors to users
     if (error.message.includes('password') || error.message.includes('credentials')) {
       return 'Invalid credentials';
