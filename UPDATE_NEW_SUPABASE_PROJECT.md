@@ -237,3 +237,5 @@ postgresql://postgres.[NEW-PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabas
 
 **Once you update the `DATABASE_URL` in Vercel and redeploy, everything should work!** 🚀
 
+
+

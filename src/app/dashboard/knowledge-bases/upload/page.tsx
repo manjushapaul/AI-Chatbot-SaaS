@@ -39,6 +39,7 @@ interface UploadedFile {
   progress: number;
   error?: string;
   uploadedAt: Date;
+  file: File; // Store the actual File object
 }
 
 interface KnowledgeBaseConfig {
@@ -129,7 +130,8 @@ export default function KnowledgeBaseUploadPage() {
       type: file.type,
       status: 'UPLOADING',
       progress: 0,
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
+      file: file // Store the actual File object
     }));
 
     setFiles(prev => [...prev, ...uploadFiles]);
@@ -232,16 +234,31 @@ export default function KnowledgeBaseUploadPage() {
       formData.append('chunkSize', config.trainingSettings.chunkSize.toString());
       formData.append('overlap', config.trainingSettings.overlap.toString());
 
-      // Add files
-      const filePromises = files.map(async (file) => {
-        const response = await fetch(`/api/knowledge-bases/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        return response.ok;
+      // Add all files to FormData
+      files.forEach(uploadedFile => {
+        formData.append('files', uploadedFile.file);
       });
 
-      await Promise.all(filePromises);
+      // Upload all files in a single request
+      const uploadResponse = await fetch('/api/knowledge-bases/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload documents');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      
+      // Check if there were any errors
+      if (uploadResult.errors && uploadResult.errors.length > 0) {
+        const errorMessages = uploadResult.errors.map((e: { fileName: string; error: string }) => 
+          `${e.fileName}: ${e.error}`
+        ).join(', ');
+        throw new Error(`Some documents failed to upload: ${errorMessages}`);
+      }
 
       setSuccess('Knowledge base created and training started successfully!');
       

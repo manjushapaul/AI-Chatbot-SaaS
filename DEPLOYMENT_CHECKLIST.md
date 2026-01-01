@@ -102,3 +102,5 @@ npx prisma migrate deploy
 3. Ensure `DATABASE_URL` is correct and accessible
 4. Check Prisma schema is valid: `npx prisma validate`
 
+
+

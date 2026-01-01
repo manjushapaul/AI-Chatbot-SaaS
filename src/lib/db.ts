@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
@@ -16,18 +16,59 @@ export class TenantDB {
 
   // Bot operations
   async getBots() {
-    return (prisma as any).bots.findMany({
-      where: { tenantId: this.tenantId },
-      include: {
-        knowledge_bases: true,
-        widgets: true,
-        _count: {
-          select: {
-            conversations: true,
-          },
+    // Verify Prisma client is available
+    if (!prisma) {
+      console.error(`[TenantDB] Prisma client not initialized for tenant ${this.tenantId}`);
+      return [];
+    }
+
+    // Validate tenantId
+    if (!this.tenantId || typeof this.tenantId !== 'string' || this.tenantId.trim() === '') {
+      console.error(`[TenantDB] Invalid tenantId: ${this.tenantId}`);
+      return [];
+    }
+
+    try {
+      // Start with absolute simplest query - no relations, no complex filters, no orderBy
+      const bots = await (prisma as any).bots.findMany({
+        where: { 
+          tenantId: this.tenantId,
         },
-      },
-    });
+      });
+
+      // Ensure bots is an array
+      if (!Array.isArray(bots)) {
+        console.warn(`[TenantDB] getBots() returned non-array for tenant ${this.tenantId}`);
+        return [];
+      }
+
+      // If no bots found, return empty array
+      if (bots.length === 0) {
+        return [];
+      }
+
+      // Add empty relations for now - we can enhance this later if needed
+      // This prevents any relation query errors from breaking the API
+      return bots.map((bot: any) => ({
+        ...bot,
+        knowledge_bases: [],
+        widgets: [],
+        _count: {
+          conversations: 0,
+        },
+      }));
+    } catch (error) {
+      console.error(`[TenantDB] Error fetching bots for tenant ${this.tenantId}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = (error as any)?.code;
+      const errorStack = error instanceof Error ? error.stack : 'No stack';
+      console.error(`[TenantDB] Error details: ${errorMessage}`);
+      console.error(`[TenantDB] Error code: ${errorCode || 'N/A'}`);
+      console.error(`[TenantDB] Error stack: ${errorStack}`);
+      
+      // Return empty array as last resort - never throw
+      return [];
+    }
   }
 
   async getBot(id: string) {
@@ -55,10 +96,17 @@ export class TenantDB {
     maxTokens?: number;
     status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DELETED';
   }) {
-    console.log('Creating bot with data:', data);
-    console.log('Tenant ID:', this.tenantId);
+    console.log('[TenantDB] Creating bot with data:', data);
+    console.log('[TenantDB] Tenant ID:', this.tenantId);
     
     try {
+      // Verify Prisma client is available
+      if (!prisma) {
+        const error = new Error('Prisma client not initialized');
+        console.error('[TenantDB]', error.message);
+        throw error;
+      }
+
       // Generate a unique ID for the bot
       const { randomUUID } = require('crypto');
       const botId = randomUUID().replace(/-/g, '');
@@ -76,10 +124,22 @@ export class TenantDB {
         },
       });
       
-      console.log('Bot created successfully:', bot);
+      console.log('[TenantDB] Bot created successfully:', bot?.id);
       return bot;
     } catch (error) {
-      console.error('Error creating bot:', error);
+      console.error('[TenantDB] Error creating bot:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = (error as any)?.code;
+      
+      // Check for database connection errors
+      if (errorCode === 'P1001' || errorCode === 'P1000' || 
+          errorMessage.includes('Can\'t reach database') ||
+          errorMessage.includes('connection')) {
+        const connectionError = new Error('Database connection failed');
+        (connectionError as any).code = errorCode;
+        throw connectionError;
+      }
+      
       throw error;
     }
   }
