@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { email, password, name, tenant } = signupSchema.parse(body);
 
     // Check if tenant subdomain already exists
-    const existingTenant = await (prisma as any).tenants.findUnique({
+    const existingTenant = await prisma.tenants.findUnique({
       where: { subdomain: tenant }
     });
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user email already exists globally
-    const existingUser = await (prisma as any).users.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: { email }
     });
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Create new tenant
     const tenantId = randomUUID().replace(/-/g, '');
     const now = new Date();
-    const newTenant = await (prisma as any).tenants.create({
+    const newTenant = await prisma.tenants.create({
       data: {
         id: tenantId,
         name: name.split(' ')[0] + "'s Organization", // Use first name for organization
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Create user as tenant admin
     const userId = randomUUID().replace(/-/g, '');
-    const user = await (prisma as any).users.create({
+    const user = await prisma.users.create({
       data: {
         id: userId,
         email,
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Create initial subscription record for the tenant
     const subscriptionId = randomUUID().replace(/-/g, '');
-    await (prisma as any).subscriptions.create({
+    await prisma.subscriptions.create({
       data: {
         id: subscriptionId,
         tenantId: newTenant.id,

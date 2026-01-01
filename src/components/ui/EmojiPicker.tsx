@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/contexts/ThemeContext';
-import type { EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData, Theme } from 'emoji-picker-react';
 
 // Dynamically import emoji picker to avoid SSR issues
 const Picker = dynamic(
@@ -93,12 +93,8 @@ export function EmojiPicker({ value, onChange, placeholder = '🤖', className =
         >
           <Picker
             onEmojiClick={handleEmojiSelect}
-            theme={theme === 'dark' ? 'dark' : 'light'}
-            skinTonesDisabled
-            searchDisabled={false}
-            previewConfig={{
-              showPreview: false
-            }}
+            theme={(theme === 'dark' ? 'dark' : 'light') as Theme}
+            skinTonesDisabled={true}
           />
         </div>
       )}

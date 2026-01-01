@@ -87,7 +87,7 @@ export default function BotDetailPage() {
           </div>
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 text-sm">
             <strong>💡 Tip:</strong> If you see this error, you might be signed in with the wrong account. 
-            Make sure you're logged in with the account that owns this bot.
+            Make sure you&apos;re logged in with the account that owns this bot.
           </div>
           <div className="mt-4 flex gap-3">
             <Link 

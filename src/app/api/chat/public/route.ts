@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         status: 'ACTIVE'
       },
       include: {
-        tenant: {
+        tenants: {
           select: { id: true, name: true, status: true }
         }
       }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if tenant is active
-    if (bot.tenant.status !== 'ACTIVE') {
+    if (bot.tenants.status !== 'ACTIVE') {
       return NextResponse.json(
         { error: 'Bot service temporarily unavailable' },
         { status: 503 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create AI service for the bot's tenant
-    const aiService = createAIService(bot.tenantId);
+    const aiService = createAIService(bot.tenants.id);
 
     let conversation;
     
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       // or create a system user if none exists
       let userId: string;
       const tenantUser = await prisma.users.findFirst({
-        where: { tenantId: bot.tenantId },
+        where: { tenantId: bot.tenants.id },
         orderBy: { createdAt: 'asc' }
       });
       
@@ -91,12 +91,18 @@ export async function POST(request: NextRequest) {
       } else {
         // Create a system user for public chats if no users exist
         try {
+          const userIdForSystem = crypto.randomUUID().replace(/-/g, '');
+          const now = new Date();
           const systemUser = await prisma.users.create({
             data: {
-              email: `system@${bot.tenantId}.public`,
+              id: userIdForSystem,
+              email: `system@${bot.tenants.id}.public`,
               name: 'Public Chat User',
-              tenantId: bot.tenantId,
-              role: 'USER'
+              tenantId: bot.tenants.id,
+              role: 'USER',
+              status: 'ACTIVE',
+              createdAt: now,
+              updatedAt: now
             }
           });
           userId = systemUser.id;
@@ -104,7 +110,7 @@ export async function POST(request: NextRequest) {
           console.error('Error creating system user:', userError);
           // If user creation fails (e.g., unique constraint), try to find any user
           const fallbackUser = await prisma.users.findFirst({
-            where: { tenantId: bot.tenantId }
+            where: { tenantId: bot.tenants.id }
           });
           if (!fallbackUser) {
             throw new Error('Unable to create or find a user for public chat. Please ensure at least one user exists in the tenant.');
@@ -114,12 +120,17 @@ export async function POST(request: NextRequest) {
       }
       
       const sessionId = `public_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const convId = crypto.randomUUID().replace(/-/g, '');
+      const now = new Date();
       conversation = await prisma.conversations.create({
         data: {
+          id: convId,
           userId,
           botId,
-          tenantId: bot.tenantId,
+          tenantId: bot.tenants.id,
           status: 'ACTIVE',
+          startedAt: now,
+          lastMessageAt: now,
           metadata: {
             sessionId,
             isPublic: true
@@ -159,14 +170,18 @@ export async function POST(request: NextRequest) {
 
     // Store the user message and bot response in the conversation
     try {
+      const userMsgId = crypto.randomUUID().replace(/-/g, '');
+      const botMsgId = crypto.randomUUID().replace(/-/g, '');
       await prisma.messages.createMany({
         data: [
           {
+            id: userMsgId,
             content: message,
             role: 'USER',
             conversationId: conversation.id,
           },
           {
+            id: botMsgId,
             content: response.message,
             role: 'ASSISTANT',
             conversationId: conversation.id,

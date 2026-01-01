@@ -129,7 +129,17 @@ export class AIService {
       }
 
       // Build system prompt with bot personality and knowledge
-      let systemPrompt = this.buildSystemPrompt(bot, relevantContent);
+      // Extract only the fields needed for Bot interface
+      const botForPrompt: Bot = {
+        id: bot.id,
+        name: bot.name,
+        personality: bot.personality || undefined,
+        model: bot.model || undefined,
+        temperature: bot.temperature || undefined,
+        maxTokens: bot.maxTokens || undefined,
+        config: bot.config ? (bot.config as { systemPrompt?: string; [key: string]: unknown }) : undefined,
+      };
+      let systemPrompt = this.buildSystemPrompt(botForPrompt, relevantContent);
       
       // Get conversation history and prepare messages
       const conversationMessages = (conversation.messages || []).map((msg: { role: string; content: string }) => {
@@ -211,7 +221,16 @@ export class AIService {
       if (!openai || !process.env.OPENAI_API_KEY) {
         // Provide a mock response when API key is not configured
         console.warn('⚠️  OpenAI API key not configured. Using mock response. Add OPENAI_API_KEY to your .env file for real AI responses.');
-        const mockResponse = this.generateMockResponse(message, bot, relevantContent);
+        const botForMock: Bot = {
+          id: bot.id,
+          name: bot.name,
+          personality: bot.personality || undefined,
+          model: bot.model || undefined,
+          temperature: bot.temperature || undefined,
+          maxTokens: bot.maxTokens || undefined,
+          config: bot.config ? (bot.config as { systemPrompt?: string; [key: string]: unknown }) : undefined,
+        };
+        const mockResponse = this.generateMockResponse(message, botForMock, relevantContent);
         
         // Save the user message and bot response
         await this.tenantDB.addMessage({
@@ -291,7 +310,16 @@ export class AIService {
           const bot = await this.tenantDB.getBot(botId);
           if (bot && conversation) {
             const relevantContent = await this.getRelevantContent(message, botId).catch(() => []);
-            const mockResponse = this.generateMockResponse(message, bot, relevantContent);
+            const botForMock: Bot = {
+              id: bot.id,
+              name: bot.name,
+              personality: bot.personality || undefined,
+              model: bot.model || undefined,
+              temperature: bot.temperature || undefined,
+              maxTokens: bot.maxTokens || undefined,
+              config: bot.config ? (bot.config as { systemPrompt?: string; [key: string]: unknown }) : undefined,
+            };
+            const mockResponse = this.generateMockResponse(message, botForMock, relevantContent);
             
             await this.tenantDB.addMessage({
               content: message,
@@ -601,7 +629,7 @@ export class AIService {
         content,
         type,
         knowledgeBaseId,
-        embeddings: null, // Placeholder for vector embeddings
+        embeddings: undefined, // Placeholder for vector embeddings
       });
     } catch (error) {
       console.error('Error processing document:', error);

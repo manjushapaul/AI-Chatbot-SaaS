@@ -118,8 +118,8 @@ export default function EditWidgetPage() {
         welcomeMessage={config.welcomeMessage}
         primaryColor={config.primaryColor}
         secondaryColor={config.secondaryColor}
-        theme={config.theme}
-        size={config.size}
+        theme={config.theme as 'light' | 'dark' | undefined}
+        size={config.size as 'small' | 'medium' | 'large' | undefined}
         showAvatar={config.showAvatar}
         botInitials="AI"
       />

@@ -112,7 +112,7 @@ export default function CreateWidgetPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
+          ...(prev[parent as keyof typeof prev] as unknown as Record<string, unknown>),
           [child]: value
         }
       }));
@@ -129,7 +129,7 @@ export default function CreateWidgetPage() {
         welcomeMessage={config.welcomeMessage}
         primaryColor={config.primaryColor}
         secondaryColor={config.secondaryColor}
-        theme={config.theme}
+        theme={config.theme === 'auto' ? undefined : (config.theme as 'light' | 'dark' | undefined)}
         size={config.size}
         showAvatar={config.showAvatar}
         botInitials="AI"

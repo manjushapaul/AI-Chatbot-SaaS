@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
       );
 
       console.log(`[KB GET] Returning ${knowledgeBasesWithCounts.length} knowledge bases`);
-      knowledgeBasesWithCounts.forEach((kb: { id: string; name: string; documents?: unknown[]; _documentCount?: number }) => {
-        console.log(`[KB GET] KB "${kb.name}" (${kb.id}): ${kb.documents?.length || 0} docs (count: ${kb._documentCount || 'N/A'})`);
+      knowledgeBasesWithCounts.forEach((kb: Record<string, unknown>) => {
+        console.log(`[KB GET] KB "${kb.name as string}" (${kb.id as string}): ${(kb.documents as unknown[] | undefined)?.length || 0} docs (count: ${kb._documentCount as number | undefined || 'N/A'})`);
       });
 
       return NextResponse.json({

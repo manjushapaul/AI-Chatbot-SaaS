@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       id: tenant.id,
       name: tenant.name,
       subdomain: tenant.subdomain,
-      customDomain: tenant.customDomain,
+      customDomain: (tenant as { customDomain?: string }).customDomain,
       branding: {
         logo: undefined,
         primaryColor: '#3B82F6',

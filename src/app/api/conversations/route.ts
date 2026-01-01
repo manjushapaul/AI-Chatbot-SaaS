@@ -62,17 +62,17 @@ export async function GET(request: NextRequest) {
         id: conv.id,
         userId: conv.userId,
         botId: conv.botId,
-        botName: (conv.bots || conv.bot)?.name || 'Unknown Bot',
-        userName: (conv.users || conv.user)?.name || 'Unknown User',
-        userEmail: (conv.users || conv.user)?.email || 'unknown@example.com',
+        botName: (conv.bots as { name?: string } | undefined)?.name || 'Unknown Bot',
+        userName: (conv.users as { name?: string } | undefined)?.name || 'Unknown User',
+        userEmail: (conv.users as { email?: string } | undefined)?.email || 'unknown@example.com',
         status: conv.status,
-        messageCount: conv._count?.messages || 0,
-        startedAt: conv.startedAt?.toISOString() || new Date().toISOString(),
-        lastMessageAt: conv.lastMessageAt?.toISOString() || new Date().toISOString(),
+        messageCount: (conv._count as { messages?: number } | undefined)?.messages || 0,
+        startedAt: (conv.startedAt as Date | undefined)?.toISOString() || new Date().toISOString(),
+        lastMessageAt: (conv.lastMessageAt as Date | undefined)?.toISOString() || new Date().toISOString(),
         totalTokens: conv.totalTokens || 0,
         totalCost: conv.totalCost || 0,
-        createdAt: conv.startedAt?.toISOString() || new Date().toISOString(),
-        updatedAt: conv.lastMessageAt?.toISOString() || new Date().toISOString()
+        createdAt: (conv.startedAt as Date | undefined)?.toISOString() || new Date().toISOString(),
+        updatedAt: (conv.lastMessageAt as Date | undefined)?.toISOString() || new Date().toISOString()
       }));
 
       return NextResponse.json({
@@ -121,16 +121,12 @@ export async function POST(request: NextRequest) {
 
     const db = createTenantDB(tenant.id);
     
-    // Create a new conversation in the database
-    const conversation = await db.createConversation({
-      userId,
-      botId,
-      title: initialMessage ? initialMessage.substring(0, 100) : 'New Conversation',
-      status: 'ACTIVE',
-      totalTokens: 0,
-      totalCost: 0.0,
-      messageCount: 0,
-    });
+      // Create a new conversation in the database
+      const conversation = await db.createConversation({
+        userId,
+        botId,
+        title: initialMessage ? initialMessage.substring(0, 100) : 'New Conversation',
+      });
 
     // If there's an initial message, add it
     if (initialMessage) {
@@ -143,11 +139,7 @@ export async function POST(request: NextRequest) {
         model: 'gpt-3.5-turbo',
       });
       
-      // Update conversation with message count
-      await db.updateConversation(conversation.id, {
-        messageCount: 1,
-        lastMessageAt: new Date(),
-      });
+      // Conversation updated automatically when message is added
     }
 
     return NextResponse.json({

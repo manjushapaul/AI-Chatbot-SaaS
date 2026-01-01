@@ -12,7 +12,7 @@ async function fixDocumentStatus() {
     console.log('🔧 Fixing document status...');
     
     // Update all documents without status or with non-ACTIVE status to ACTIVE
-    const result = await prisma.document.updateMany({
+    const result = await prisma.documents.updateMany({
       where: {
         OR: [
           { status: null as unknown as 'ACTIVE' },
@@ -27,13 +27,13 @@ async function fixDocumentStatus() {
     console.log(`✅ Updated ${result.count} documents to ACTIVE status`);
     
     // Verify the fix
-    const activeDocs = await prisma.document.count({
+    const activeDocs = await prisma.documents.count({
       where: {
         status: 'ACTIVE',
       },
     });
     
-    const totalDocs = await prisma.document.count();
+    const totalDocs = await prisma.documents.count();
     
     console.log(`📊 Total documents: ${totalDocs}`);
     console.log(`✅ Active documents: ${activeDocs}`);

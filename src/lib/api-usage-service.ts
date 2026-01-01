@@ -41,7 +41,7 @@ export class APIUsageService {
    */
   async recordUsage(usage: APIUsageRecord): Promise<void> {
     try {
-      await prisma.aPIUsage.create({
+      await prisma.api_usage.create({
         data: {
           tenantId: usage.tenantId,
           endpoint: usage.endpoint,
@@ -68,7 +68,7 @@ export class APIUsageService {
    */
   async canMakeAPICall(tenantId: string): Promise<RateLimitInfo> {
     try {
-      const tenant = await prisma.tenants.findUnique({
+      const tenant = await (prisma as any).tenants.findUnique({
         where: { id: tenantId }
       });
 
@@ -141,7 +141,7 @@ export class APIUsageService {
       const monthStart = this.getCurrentMonthStart();
       const monthEnd = this.getNextMonthStart();
 
-      const usage = await prisma.aPIUsage.aggregate({
+      const usage = await prisma.api_usage.aggregate({
         where: {
           tenantId,
           timestamp: {
@@ -169,7 +169,7 @@ export class APIUsageService {
       const startDate = this.getStartDate(timeRange);
       const endDate = new Date();
 
-      const usage = await prisma.aPIUsage.findMany({
+      const usage = await prisma.api_usage.findMany({
         where: {
           tenantId,
           timestamp: {
@@ -236,7 +236,7 @@ export class APIUsageService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const usage = await prisma.aPIUsage.findMany({
+      const usage = await prisma.api_usage.findMany({
         where: {
           tenantId,
           timestamp: {
@@ -290,7 +290,7 @@ export class APIUsageService {
       const startDate = this.getStartDate(timeRange);
       const endDate = new Date();
 
-      const usage = await prisma.aPIUsage.findMany({
+      const usage = await prisma.api_usage.findMany({
         where: {
           tenantId,
           timestamp: {
@@ -345,7 +345,7 @@ export class APIUsageService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-      const result = await prisma.aPIUsage.deleteMany({
+      const result = await prisma.api_usage.deleteMany({
         where: {
           timestamp: {
             lt: cutoffDate

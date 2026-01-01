@@ -542,7 +542,11 @@ export default function AnalyticsPage() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ topic, percentage }) => `${topic}: ${percentage}%`}
+                        label={(entry: { payload?: { topic?: string; percentage?: number } }) => {
+                          const topic = entry.payload?.topic || 'Unknown';
+                          const percentage = entry.payload?.percentage || 0;
+                          return `${topic}: ${percentage}%`;
+                        }}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="count"

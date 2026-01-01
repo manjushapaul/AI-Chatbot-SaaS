@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const lowerMessage = message.toLowerCase();
     
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-      aiResponse = `Hello! I'm ${widget.bot?.name || 'your AI assistant'}. How can I help you today?`;
+      aiResponse = `Hello! I'm ${widget.bots?.name || 'your AI assistant'}. How can I help you today?`;
     } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
       aiResponse = `I'm here to help! I can assist you with questions about our services, pricing, or any other topics. What would you like to know?`;
     } else if (lowerMessage.includes('pricing') || lowerMessage.includes('cost') || lowerMessage.includes('price')) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       aiResponse = `Goodbye! Feel free to come back if you have more questions. Have a great day!`;
     } else {
       // Generate a contextual response based on the message
-      aiResponse = `I understand you're asking about "${message}". This is a great question! In a production environment, I would search through our knowledge base to provide you with the most accurate and helpful information. For now, I can tell you that I'm ${widget.bot?.name || 'your AI assistant'} and I'm here to help with any questions you might have.`;
+      aiResponse = `I understand you're asking about "${message}". This is a great question! In a production environment, I would search through our knowledge base to provide you with the most accurate and helpful information. For now, I can tell you that I'm ${widget.bots?.name || 'your AI assistant'} and I'm here to help with any questions you might have.`;
     }
 
     // Add some personality and context

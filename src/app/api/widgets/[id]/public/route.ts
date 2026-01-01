@@ -49,10 +49,10 @@ export async function GET(
     const widget = await prisma.widgets.findFirst({
       where: { id: widgetId },
       include: {
-        bot: {
+        bots: {
           select: { name: true, id: true },
         },
-        tenant: {
+        tenants: {
           select: { id: true, name: true },
         },
       },

@@ -294,7 +294,7 @@ export default function LandingPage() {
                         <div className="flex justify-start">
                           <div className="max-w-[75%]">
                             <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-4 py-2.5 border border-gray-200">
-                              <p className="text-xs text-gray-700 leading-relaxed">Hello! I'm the Hayal Hotel assistant. How can I help you today?</p>
+                              <p className="text-xs text-gray-700 leading-relaxed">Hello! I&apos;m the Hayal Hotel assistant. How can I help you today?</p>
                             </div>
                             <span className="text-[10px] text-gray-400 mt-1 block ml-2">2:34 PM</span>
                           </div>

@@ -154,7 +154,7 @@ export class SubscriptionService {
 
     // Update subscription record
     if (currentPlan !== 'FREE') {
-      await (prisma as any).subscriptions.updateMany({
+      await prisma.subscriptions.updateMany({
         where: { tenantId },
         data: {
           plan: newPlanId,
@@ -206,7 +206,7 @@ export class SubscriptionService {
       );
 
       // Update local subscription record
-      await (prisma as any).subscriptions.update({
+      await prisma.subscriptions.update({
         where: { id: currentSubscription.id },
         data: {
           plan: newPlanId,
@@ -268,7 +268,7 @@ export class SubscriptionService {
    */
   async getSubscription(tenantId: string) {
     try {
-      return await (prisma as any).subscriptions.findUnique({
+      return await prisma.subscriptions.findUnique({
         where: { tenantId }
       });
     } catch (error) {
@@ -297,7 +297,7 @@ export class SubscriptionService {
       // Update isTrialExpired flag if it's out of sync
       if (isExpired !== subscription.isTrialExpired) {
         try {
-          await (prisma as any).subscriptions.update({
+          await prisma.subscriptions.update({
             where: { id: subscription.id },
             data: { isTrialExpired: isExpired }
           });
@@ -359,7 +359,7 @@ export class SubscriptionService {
       await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await (prisma as any).subscriptions.update({
+      await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'CANCELED',
@@ -399,7 +399,7 @@ export class SubscriptionService {
       await stripeService.reactivateSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await (prisma as any).subscriptions.update({
+      await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'ACTIVE',

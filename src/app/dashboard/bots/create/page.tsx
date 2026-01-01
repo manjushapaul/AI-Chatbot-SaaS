@@ -199,7 +199,15 @@ export default function CreateBotPage() {
       return;
     }
     
-    handleSubmit(e as React.FormEvent<HTMLFormElement>);
+    // Create a synthetic form event for handleSubmit
+    const syntheticEvent = {
+      preventDefault: () => {},
+      stopPropagation: () => {},
+      currentTarget: e.currentTarget,
+      target: e.target,
+    } as React.FormEvent<HTMLFormElement>;
+    
+    handleSubmit(syntheticEvent);
   };
 
   const nextStep = () => {
