@@ -38,24 +38,35 @@ export default function DashboardPage() {
 
     const fetchDashboardData = async () => {
       try {
-        // Fetch data from multiple endpoints
-        const [botsRes, conversationsRes, knowledgeBasesRes, usersRes] = await Promise.all([
-          fetch('/api/bots'),
-          fetch('/api/conversations'),
-          fetch('/api/knowledge-bases'),
-          fetch('/api/users')
+        setError(null);
+        
+        // Fetch data from multiple endpoints independently to handle partial failures
+        const results = await Promise.allSettled([
+          fetch('/api/bots').then(res => res.ok ? res.json() : Promise.reject(new Error(`Bots API failed: ${res.status}`))),
+          fetch('/api/conversations').then(res => res.ok ? res.json() : Promise.reject(new Error(`Conversations API failed: ${res.status}`))),
+          fetch('/api/knowledge-bases').then(res => res.ok ? res.json() : Promise.reject(new Error(`Knowledge bases API failed: ${res.status}`))),
+          fetch('/api/users').then(res => res.ok ? res.json() : Promise.reject(new Error(`Users API failed: ${res.status}`)))
         ]);
 
-        if (!botsRes.ok || !conversationsRes.ok || !knowledgeBasesRes.ok || !usersRes.ok) {
-          throw new Error('Failed to fetch dashboard data');
+        // Extract data from results, handling failures gracefully
+        const botsData = results[0].status === 'fulfilled' ? results[0].value : { success: false, data: [] };
+        const conversationsData = results[1].status === 'fulfilled' ? results[1].value : { success: false, data: [] };
+        const knowledgeBasesData = results[2].status === 'fulfilled' ? results[2].value : { success: false, data: [] };
+        const usersData = results[3].status === 'fulfilled' ? results[3].value : { success: false, data: { users: [] } };
+
+        // Log any failures for debugging
+        const failures: string[] = [];
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const endpointNames = ['Bots', 'Conversations', 'Knowledge Bases', 'Users'];
+            failures.push(endpointNames[index]);
+            console.error(`[Dashboard] ${endpointNames[index]} API failed:`, result.reason);
+          }
+        });
+
+        if (failures.length > 0) {
+          console.warn(`[Dashboard] Some endpoints failed: ${failures.join(', ')}`);
         }
-
-        const [botsData, conversationsData, knowledgeBasesData, usersData] = await Promise.all([
-          botsRes.json(),
-          conversationsRes.json(),
-          knowledgeBasesRes.json(),
-          usersRes.json()
-        ]);
 
         // Calculate active conversations (status !== 'CLOSED')
         const activeConversations = conversationsData.data?.filter((conv: { status: string }) => conv.status !== 'CLOSED').length || 0;
@@ -68,16 +79,16 @@ export default function DashboardPage() {
             id: '1',
             type: 'bot',
             description: `Bot "${botsData.data[0].name}" is active`,
-            timestamp: new Date(botsData.data[0].createdAt).toLocaleDateString()
+            timestamp: new Date(botsData.data[0].createdAt).toISOString()
           });
         }
 
-        if (usersData.data?.length > 0) {
+        if (usersData.data?.users?.length > 0) {
           recentActivity.push({
             id: '2',
             type: 'user',
-            description: `${usersData.data.length} team member(s) active`,
-            timestamp: 'Today'
+            description: `${usersData.data.users.length} team member(s) active`,
+            timestamp: new Date().toISOString()
           });
         }
 
@@ -85,13 +96,21 @@ export default function DashboardPage() {
           totalBots: botsData.data?.length || 0,
           activeConversations,
           totalKnowledgeBases: knowledgeBasesData.data?.length || 0,
-          totalUsers: usersData.data?.length || 0,
+          totalUsers: usersData.data?.users?.length || 0,
           recentActivity
         });
 
+        // Only show error if ALL endpoints failed
+        if (failures.length === 4) {
+          setError('Failed to load dashboard data. Please check your connection and try again.');
+        } else if (failures.length > 0) {
+          // Show warning but don't block the dashboard
+          console.warn(`[Dashboard] Partial data loaded. Failed endpoints: ${failures.join(', ')}`);
+        }
+
       } catch (error) {
         console.error('Dashboard data fetch error:', error);
-        setError('Failed to load dashboard data');
+        setError('Failed to load dashboard data. Please try again.');
       } finally {
         setLoading(false);
       }

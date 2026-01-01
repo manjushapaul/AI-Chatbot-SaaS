@@ -118,9 +118,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Signup error:', error);
+    console.error('[Signup API] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.code;
+    
+    // Check for database connection errors
+    if (errorMessage.includes('Can\'t reach database') || 
+        errorMessage.includes('Tenant or user not found') ||
+        errorMessage.includes('P1001') ||
+        errorMessage.includes('P1000') ||
+        errorCode === 'P1001' ||
+        errorCode === 'P1000') {
+      console.error('[Signup API] Database connection error detected');
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed', 
+          details: 'Unable to connect to the database. Please check your database configuration.',
+          technical: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+
+    // Return more detailed error in development
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : 'An unexpected error occurred. Please try again.',
+        technical: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+      },
       { status: 500 }
     );
   }

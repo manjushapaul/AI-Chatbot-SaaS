@@ -153,7 +153,7 @@ export class SubscriptionService {
 
     // Update subscription record
     if (currentPlan !== 'FREE') {
-      await prisma.subscriptions.updateMany({
+      await (prisma as any).subscriptions.updateMany({
         where: { tenantId },
         data: {
           plan: newPlanId,
@@ -205,7 +205,7 @@ export class SubscriptionService {
       );
 
       // Update local subscription record
-      await prisma.subscriptions.update({
+      await (prisma as any).subscriptions.update({
         where: { id: currentSubscription.id },
         data: {
           plan: newPlanId,
@@ -266,9 +266,15 @@ export class SubscriptionService {
    * Get subscription for a tenant
    */
   async getSubscription(tenantId: string) {
-    return await prisma.subscriptions.findUnique({
-      where: { tenantId }
-    });
+    try {
+      return await (prisma as any).subscriptions.findUnique({
+        where: { tenantId }
+      });
+    } catch (error) {
+      console.error('[SubscriptionService] Error fetching subscription:', error);
+      // Return null on error to prevent blocking other operations
+      return null;
+    }
   }
 
   /**
@@ -290,7 +296,7 @@ export class SubscriptionService {
       // Update isTrialExpired flag if it's out of sync
       if (isExpired !== subscription.isTrialExpired) {
         try {
-          await prisma.subscriptions.update({
+          await (prisma as any).subscriptions.update({
             where: { id: subscription.id },
             data: { isTrialExpired: isExpired }
           });
@@ -352,7 +358,7 @@ export class SubscriptionService {
       await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await prisma.subscriptions.update({
+      await (prisma as any).subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'CANCELED',
@@ -392,7 +398,7 @@ export class SubscriptionService {
       await stripeService.reactivateSubscription(subscription.stripeSubscriptionId);
 
       // Update local record
-      await prisma.subscriptions.update({
+      await (prisma as any).subscriptions.update({
         where: { id: subscription.id },
         data: {
           status: 'ACTIVE',
