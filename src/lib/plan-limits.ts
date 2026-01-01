@@ -106,7 +106,11 @@ export class PlanLimitsService {
 
         case 'documents':
           const documents = await prisma.documents.findMany({
-            where: { knowledgeBase: { tenantId: tenantId } }
+            where: { 
+              knowledge_bases: {
+                tenantId: tenantId
+              }
+            }
           });
           return documents.length;
 
@@ -127,7 +131,11 @@ export class PlanLimitsService {
         case 'storage':
           // Calculate storage in MB
           const docs = await prisma.documents.findMany({
-            where: { knowledgeBase: { tenantId: tenantId } }
+            where: { 
+              knowledge_bases: {
+                tenantId: tenantId
+              }
+            }
           });
           const totalSize = docs.reduce((acc: number, doc: { content?: string; [key: string]: unknown }) => {
             // Estimate size: 1 character ≈ 1 byte

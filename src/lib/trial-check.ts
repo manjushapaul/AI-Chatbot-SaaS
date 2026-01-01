@@ -1,4 +1,4 @@
-import { prisma } from './db';
+// Note: Prisma removed - this file may not be actively used
 import { subscriptionService } from './subscription-service';
 
 /**
@@ -41,6 +41,7 @@ export async function canPerformPaidAction(tenantId: string): Promise<{ allowed:
     return { allowed: true }; // Allow on error to avoid blocking users
   }
 }
+
 
 
 

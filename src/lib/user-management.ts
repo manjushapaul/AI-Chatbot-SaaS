@@ -359,7 +359,7 @@ export class UserManagementService {
   /**
    * Get available roles for the tenant
    */
-  async getAvailableRoles(tenantId: string): Promise<UserRole[]> {
+  async getAvailableRoles(_tenantId: string): Promise<UserRole[]> {
     const roles: UserRole[] = [
       {
         id: 'SUPER_ADMIN',

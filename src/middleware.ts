@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if path is public (always accessible)
-  const isPublic = PUBLIC_PATHS.some((path) =>
+  const _isPublic = PUBLIC_PATHS.some((path) =>
     pathname === path || pathname.startsWith(path + '/')
   );
 

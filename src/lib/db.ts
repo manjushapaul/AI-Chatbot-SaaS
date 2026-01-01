@@ -168,7 +168,7 @@ export class TenantDB {
     config?: Prisma.InputJsonValue | null;
   }>) {
     // Build the update data object using Prisma's generated types
-    const updateData: Prisma.BotUpdateInput = {};
+    const updateData: Prisma.botsUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
@@ -379,7 +379,7 @@ export class TenantDB {
         content: data.content,
         type: data.type,
         url: data.url,
-        embeddings: data.embeddings,
+        embeddings: data.embeddings as Prisma.InputJsonValue | undefined,
         status: 'ACTIVE', // Explicitly set status to ACTIVE
         knowledgeBaseId: data.knowledgeBaseId,
         createdAt: now,
@@ -508,7 +508,7 @@ export class TenantDB {
         userId: data.userId,
         botId: data.botId,
         title: data.title,
-        metadata: data.metadata,
+        metadata: data.metadata as Prisma.InputJsonValue | undefined,
         lastMessageAt: now,
         startedAt: now,
       },
@@ -609,9 +609,18 @@ export class TenantDB {
     metadata?: Record<string, unknown>;
     closedAt?: Date;
   }) {
+    const updateData: {
+      status?: 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
+      title?: string;
+      metadata?: Prisma.InputJsonValue;
+      closedAt?: Date;
+    } = {
+      ...data,
+      metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
+    };
     return prisma.conversations.update({
       where: { id },
-      data,
+      data: updateData,
     });
   }
 
@@ -654,7 +663,7 @@ export class TenantDB {
         cost: data.cost ?? 0.0,
         model: data.model,
         responseTime: data.responseTime,
-        metadata: data.metadata,
+        metadata: data.metadata as Prisma.InputJsonValue | undefined,
       },
     });
 
@@ -775,7 +784,7 @@ export class TenantDB {
         id: widgetId,
         name: data.name,
         type: data.type,
-        config: data.config,
+        config: data.config as Prisma.InputJsonValue,
         tenantId: this.tenantId,
         botId: data.botId,
         createdAt: now,
@@ -818,9 +827,19 @@ export class TenantDB {
     config: Record<string, unknown>;
     status: string;
   }>) {
+    const updateData: {
+      name?: string;
+      type?: 'CHAT_WIDGET' | 'POPUP' | 'EMBEDDED' | 'FLOATING';
+      config?: Prisma.InputJsonValue;
+      status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DELETED';
+    } = {
+      ...data,
+      config: data.config ? (data.config as Prisma.InputJsonValue) : undefined,
+      status: data.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DELETED' | undefined,
+    };
     return prisma.widgets.update({
       where: { id, tenantId: this.tenantId },
-      data,
+      data: updateData,
     });
   }
 
@@ -844,7 +863,7 @@ export class TenantDB {
         _count: {
           select: {
             conversations: true,
-            apiKeys: true,
+            api_keys: true,
           },
         },
       },
@@ -950,6 +969,7 @@ export class TenantDB {
       data: {
         id: apiKeyId,
         ...data,
+        permissions: data.permissions as Prisma.InputJsonValue,
         tenantId: this.tenantId,
         createdAt: now,
         updatedAt: now,
@@ -1049,7 +1069,7 @@ export class TenantDB {
           category: mappedCategory,
           priority: mappedPriority,
           actionUrl: data.actionUrl,
-          metadata: data.metadata || {},
+          metadata: (data.metadata || {}) as Prisma.InputJsonValue,
         },
       });
     } catch (error) {
@@ -1190,6 +1210,7 @@ export class TenantDB {
           quietHoursEnd: pref.quietHoursEnd,
         },
         create: {
+          id: randomUUID().replace(/-/g, ''),
           userId,
           category: pref.category as 'bot_activity' | 'system' | 'metrics' | 'team' | 'billing',
           inAppEnabled: pref.inAppEnabled ?? true,
@@ -1198,6 +1219,8 @@ export class TenantDB {
           frequency: (pref.frequency || 'REALTIME') as 'REALTIME' | 'HOURLY_DIGEST' | 'DAILY_DIGEST',
           quietHoursStart: pref.quietHoursStart,
           quietHoursEnd: pref.quietHoursEnd,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       })
     );
@@ -1245,10 +1268,15 @@ export async function createTenant(data: {
   customDomain?: string;
   plan?: string;
 }) {
+  const tenantId = randomUUID().replace(/-/g, '');
+  const now = new Date();
   return prisma.tenants.create({
     data: {
+      id: tenantId,
       ...data,
       plan: (data.plan as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL' | undefined) || 'FREE',
+      createdAt: now,
+      updatedAt: now,
     },
   });
 } 
