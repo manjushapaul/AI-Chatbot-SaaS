@@ -1,5 +1,7 @@
 import { prisma } from './db';
 import { stripeService } from './stripe';
+import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export interface APIUsageRecord {
   tenantId: string;
@@ -43,17 +45,18 @@ export class APIUsageService {
     try {
       await prisma.api_usage.create({
         data: {
+          id: randomUUID().replace(/-/g, ''),
           tenantId: usage.tenantId,
           endpoint: usage.endpoint,
           method: usage.method,
           statusCode: usage.statusCode,
           responseTime: usage.responseTime,
-          tokensUsed: usage.tokensUsed,
-          model: usage.model,
-          userId: usage.userId,
-          botId: usage.botId,
-          conversationId: usage.conversationId,
-          metadata: usage.metadata || {},
+          tokensUsed: usage.tokensUsed ?? null,
+          model: usage.model ?? null,
+          userId: usage.userId ?? null,
+          botId: usage.botId ?? null,
+          conversationId: usage.conversationId ?? null,
+          metadata: usage.metadata ? (usage.metadata as Prisma.InputJsonValue) : undefined,
           timestamp: new Date()
         }
       });
@@ -68,7 +71,7 @@ export class APIUsageService {
    */
   async canMakeAPICall(tenantId: string): Promise<RateLimitInfo> {
     try {
-      const tenant = await (prisma as any).tenants.findUnique({
+      const tenant = await prisma.tenants.findUnique({
         where: { id: tenantId }
       });
 
@@ -180,22 +183,22 @@ export class APIUsageService {
       });
 
       const totalRequests = usage.length;
-      const successfulRequests = usage.filter((u: APIUsage) => u.statusCode >= 200 && u.statusCode < 300).length;
+      const successfulRequests = usage.filter((u: { statusCode: number }) => u.statusCode >= 200 && u.statusCode < 300).length;
       const failedRequests = totalRequests - successfulRequests;
-      const totalTokens = usage.reduce((sum: number, u: APIUsage) => sum + (u.tokensUsed || 0), 0);
+      const totalTokens = usage.reduce((sum: number, u: { tokensUsed?: number | null }) => sum + (u.tokensUsed || 0), 0);
       const averageResponseTime = totalRequests > 0 
-        ? usage.reduce((sum: number, u: APIUsage) => sum + u.responseTime, 0) / totalRequests 
+        ? usage.reduce((sum: number, u: { responseTime: number }) => sum + u.responseTime, 0) / totalRequests 
         : 0;
 
       // Group by endpoint
       const requestsByEndpoint: Record<string, number> = {};
-      usage.forEach((u: APIUsage) => {
+      usage.forEach((u: { endpoint: string; statusCode: number }) => {
         requestsByEndpoint[u.endpoint] = (requestsByEndpoint[u.endpoint] || 0) + 1;
       });
 
       // Group by status code
       const requestsByStatus: Record<string, number> = {};
-      usage.forEach((u: APIUsage) => {
+      usage.forEach((u: { endpoint: string; statusCode: number }) => {
         const statusGroup = Math.floor(u.statusCode / 100) + 'xx';
         requestsByStatus[statusGroup] = (requestsByStatus[statusGroup] || 0) + 1;
       });

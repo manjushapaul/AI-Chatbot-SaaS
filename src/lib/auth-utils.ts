@@ -45,13 +45,13 @@ export async function getCurrentUser() {
   
   return await prisma.users.findUnique({
     where: { id: session.user.id },
-    include: { tenant: true }
+    include: { tenants: true }
   });
 }
 
 export async function getCurrentTenant() {
   const user = await getCurrentUser();
-  return user?.tenant || null;
+  return user?.tenants || null;
 }
 
 export function hasPermission(userRole: string, permission: Permission): boolean {
@@ -92,7 +92,7 @@ export function canManageKnowledge(userRole: string): boolean {
 }
 
 export async function validateUserAccess(userId: string, tenantId: string): Promise<boolean> {
-  const user = await prisma.users.findUnique({
+  const user = await (prisma as any).users.findUnique({
     where: { id: userId },
     select: { tenantId: true, status: true }
   });
