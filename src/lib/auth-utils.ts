@@ -43,7 +43,7 @@ export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   
-  return await (prisma as any).users.findUnique({
+  return await prisma.users.findUnique({
     where: { id: session.user.id },
     include: { tenant: true }
   });
@@ -92,7 +92,7 @@ export function canManageKnowledge(userRole: string): boolean {
 }
 
 export async function validateUserAccess(userId: string, tenantId: string): Promise<boolean> {
-  const user = await (prisma as any).users.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: userId },
     select: { tenantId: true, status: true }
   });

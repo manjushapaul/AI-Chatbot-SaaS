@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Upload, 
@@ -9,7 +9,6 @@ import {
   Settings, 
   CheckCircle, 
   AlertCircle, 
-  X, 
   Trash2,
   ArrowLeft,
   Loader2
@@ -39,6 +38,7 @@ interface UploadedFile {
   progress: number;
   error?: string;
   uploadedAt: Date;
+  file: File; // Store the actual File object
 }
 
 interface KnowledgeBaseConfig {
@@ -56,7 +56,6 @@ interface KnowledgeBaseConfig {
 export default function KnowledgeBaseUploadPage() {
   const router = useRouter();
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
   const [availableBots, setAvailableBots] = useState<Bot[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(true);
@@ -129,7 +128,8 @@ export default function KnowledgeBaseUploadPage() {
       type: file.type,
       status: 'UPLOADING',
       progress: 0,
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
+      file: file // Store the actual File object
     }));
 
     setFiles(prev => [...prev, ...uploadFiles]);
@@ -137,29 +137,14 @@ export default function KnowledgeBaseUploadPage() {
   }, []);
 
   const simulateFileUpload = async (uploadFiles: UploadedFile[]) => {
-    setIsUploading(true);
-    
+    // Mark files as ready for upload (actual upload happens when training starts)
     for (const file of uploadFiles) {
-      // Simulate upload progress
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { ...f, progress: i, status: i === 100 ? 'PROCESSING' : 'UPLOADING' }
-            : f
-        ));
-      }
-      
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 500));
       setFiles(prev => prev.map(f => 
         f.id === file.id 
-          ? { ...f, status: 'TRAINED' }
+          ? { ...f, progress: 100, status: 'UPLOADING' }
           : f
       ));
     }
-    
-    setIsUploading(false);
   };
 
   const removeFile = (fileId: string) => {
@@ -233,29 +218,18 @@ export default function KnowledgeBaseUploadPage() {
       formData.append('overlap', config.trainingSettings.overlap.toString());
 
       // Add all files to FormData
-      files.forEach(uploadedFile => {
+      files.forEach((uploadedFile) => {
         formData.append('files', uploadedFile.file);
       });
 
       // Upload all files in a single request
-      const uploadResponse = await fetch('/api/knowledge-bases/upload', {
+      const response = await fetch(`/api/knowledge-bases/upload`, {
         method: 'POST',
         body: formData
       });
 
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload documents');
-      }
-
-      const uploadResult = await uploadResponse.json();
-      
-      // Check if there were any errors
-      if (uploadResult.errors && uploadResult.errors.length > 0) {
-        const errorMessages = uploadResult.errors.map((e: { fileName: string; error: string }) => 
-          `${e.fileName}: ${e.error}`
-        ).join(', ');
-        throw new Error(`Some documents failed to upload: ${errorMessages}`);
+      if (!response.ok) {
+        throw new Error('Failed to upload documents');
       }
 
       setSuccess('Knowledge base created and training started successfully!');

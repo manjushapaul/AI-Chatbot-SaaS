@@ -56,8 +56,9 @@ export function FreeTrialModal({
       }
 
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Failed to create account. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create account. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -145,6 +146,7 @@ export function FreeTrialModal({
     </div>
   );
 }
+
 
 
 

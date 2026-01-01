@@ -20,7 +20,7 @@ export async function getTenantContext(): Promise<TenantContext | null> {
       
       if (session?.user?.tenantId) {
         // Get tenant details from database
-        const tenant = await (prisma as any).tenants.findUnique({
+        const tenant = await prisma.tenants.findUnique({
           where: { id: session.user.tenantId }
         });
 

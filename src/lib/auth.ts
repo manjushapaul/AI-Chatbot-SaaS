@@ -120,7 +120,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Get tenant by subdomain
-          const tenantRecord = await (prisma as any).tenants.findUnique({
+          const tenantRecord = await prisma.tenants.findUnique({
             where: { subdomain: tenant },
             include: { users: true }
           });
@@ -136,7 +136,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Find user in the specific tenant
-          const user = await (prisma as any).users.findFirst({
+          const user = await prisma.users.findFirst({
             where: {
               email: email.toLowerCase(),
               tenantId: tenantRecord.id,
@@ -169,7 +169,7 @@ export const authOptions: NextAuthOptions = {
 
           // Update last login (optional - you can add this field to your schema)
           try {
-            await (prisma as any).users.update({
+            await prisma.users.update({
               where: { id: user.id },
               data: { updatedAt: new Date() }
             });
@@ -210,14 +210,14 @@ export const authOptions: NextAuthOptions = {
           if (!email) return false;
 
           // Try to find existing user by email
-          const existingUser = await (prisma as any).users.findFirst({
+          const existingUser = await prisma.users.findFirst({
             where: { email },
             include: { tenants: true },
           });
 
           if (existingUser && existingUser.status === 'ACTIVE') {
             // Update user info from Google
-            await (prisma as any).users.update({
+            await prisma.users.update({
               where: { id: existingUser.id },
               data: {
                 name: user.name || existingUser.name,
@@ -245,7 +245,7 @@ export const authOptions: NextAuthOptions = {
         // For Google OAuth, fetch user from database
         if (account?.provider === 'google' && user.email) {
           try {
-            const dbUser = await (prisma as any).users.findFirst({
+            const dbUser = await prisma.users.findFirst({
               where: { email: user.email.toLowerCase() },
               include: { tenants: true },
             });
@@ -265,8 +265,8 @@ export const authOptions: NextAuthOptions = {
           token.role = user.role;
           token.tenantId = user.tenantId;
           token.tenant = user.tenant;
-          token.email = user.email;
-          token.name = user.name;
+          token.email = user.email ?? null;
+          token.name = user.name ?? null;
         }
       }
 

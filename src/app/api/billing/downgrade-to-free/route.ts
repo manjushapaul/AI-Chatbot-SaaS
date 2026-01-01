@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Update subscription to mark trial as expired and set to free
     if (subscription) {
-      await (prisma as any).subscriptions.update({
+      await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           plan: 'FREE',
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update tenant plan
-    await (prisma as any).tenants.update({
+    await prisma.tenants.update({
       where: { id: tenantContext.id },
       data: { plan: 'FREE' }
     });

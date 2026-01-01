@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       });
       
       // Transform the data to match the frontend interface
-      const transformedConversations = conversations.map((conv: any) => ({
+      const transformedConversations = conversations.map((conv: Record<string, unknown>) => ({
         id: conv.id,
         userId: conv.userId,
         botId: conv.botId,

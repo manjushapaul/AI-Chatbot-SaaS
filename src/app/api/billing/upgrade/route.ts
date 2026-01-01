@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         // Update subscription with customer ID
         if (subscription) {
-          await (prisma as any).subscriptions.update({
+          await prisma.subscriptions.update({
             where: { id: subscription.id },
             data: { stripeCustomerId: customerId }
           });

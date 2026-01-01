@@ -128,7 +128,7 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: priceId,
-        status: subscription.status?.toUpperCase() as any,
+        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID',
         trialEndsAt: trialEnd,
         isTrialExpired: isTrialExpired,
         currentPeriodStart: new Date(subscription.current_period_start! * 1000),
@@ -142,7 +142,7 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: priceId,
-        status: subscription.status?.toUpperCase() as any,
+        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID',
         trialEndsAt: trialEnd,
         isTrialExpired: isTrialExpired,
         currentPeriodStart: new Date(subscription.current_period_start! * 1000),
@@ -180,7 +180,7 @@ async function handleSubscriptionUpdated(subscription: StripeSubscription) {
     const now = new Date();
     const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
     const isTrialExpired = trialEnd ? trialEnd <= now : false;
-    const status = subscription.status?.toUpperCase() as any;
+    const status = (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID';
 
     // If trial ended and status is still TRIALING, mark as expired
     const finalStatus = (status === 'TRIALING' && isTrialExpired) ? 'TRIALING' : status;

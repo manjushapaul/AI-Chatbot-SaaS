@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
     // Get subscription directly from database
     console.log('[API] Fetching subscription for tenantId:', tenantId);
     console.log('[API] Prisma models available:', Object.keys(prisma).filter(k => !k.startsWith('_') && !k.startsWith('$')));
-    console.log('[API] prisma.subscriptions type:', typeof (prisma as any).subscriptions);
+    console.log('[API] prisma.subscriptions type:', typeof prisma.subscriptions);
     
     // Try to access subscriptions model
     let subscription;
     try {
-      subscription = await (prisma as any).subscriptions.findFirst({
+      subscription = await prisma.subscriptions.findFirst({
         where: { tenantId: tenantId }
       });
     } catch (dbError) {
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     // Update isTrialExpired flag if needed
     if (isExpired && !subscription.isTrialExpired) {
       try {
-        await (prisma as any).subscriptions.update({
+        await prisma.subscriptions.update({
           where: { id: subscription.id },
           data: { isTrialExpired: true }
         });

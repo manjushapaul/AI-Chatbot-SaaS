@@ -19,7 +19,7 @@ export async function sendTrialStartNotification(tenantId: string, userId: strin
     });
 
     // Create in-app notification
-    await (prisma as any).notifications.create({
+    await prisma.notifications.create({
       data: {
         userId,
         tenantId,
@@ -75,7 +75,7 @@ export async function sendTrialEndingSoonNotification(tenantId: string, userId: 
     });
 
     // Create in-app notification
-    await (prisma as any).notifications.create({
+    await prisma.notifications.create({
       data: {
         userId,
         tenantId,
@@ -113,7 +113,7 @@ export async function sendTrialEndingSoonNotification(tenantId: string, userId: 
 export async function sendTrialExpiredNotification(tenantId: string, userId: string) {
   try {
     // Create in-app notification
-    await (prisma as any).notifications.create({
+    await prisma.notifications.create({
       data: {
         userId,
         tenantId,
@@ -157,7 +157,7 @@ export async function checkAndSendTrialNotifications(tenantId: string) {
     const isExpired = await subscriptionService.isTrialExpired(tenantId);
     if (isExpired) {
       // Get tenant admin user
-      const tenant = await (prisma as any).tenants.findUnique({
+      const tenant = await prisma.tenants.findUnique({
         where: { id: tenantId },
         include: {
           users: {
@@ -182,7 +182,7 @@ export async function checkAndSendTrialNotifications(tenantId: string) {
 
       if (daysRemaining >= 3 && daysRemaining <= 7) {
         // Get tenant admin user
-        const tenant = await (prisma as any).tenants.findUnique({
+        const tenant = await prisma.tenants.findUnique({
           where: { id: tenantId },
           include: {
             users: {

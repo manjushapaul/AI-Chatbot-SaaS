@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession, Session } from 'next-auth';
 import { authOptions } from './auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -33,16 +33,18 @@ export async function requireAuth(request?: NextRequest) {
 /**
  * Check if user has required role
  */
-export function hasRole(session: any, requiredRole: string): boolean {
+export function hasRole(session: Session | null, requiredRole: string): boolean {
   return session?.user?.role === requiredRole;
 }
 
 /**
  * Check if user has any of the required roles
  */
-export function hasAnyRole(session: any, requiredRoles: string[]): boolean {
-  return requiredRoles.includes(session?.user?.role);
+export function hasAnyRole(session: Session | null, requiredRoles: string[]): boolean {
+  if (!session?.user?.role) return false;
+  return requiredRoles.includes(session.user.role);
 }
+
 
 
 

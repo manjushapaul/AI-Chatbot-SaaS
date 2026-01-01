@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     console.error('[Signup API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode = (error as any)?.code;
+    const errorCode = (error as { code?: string })?.code;
     
     // Check for database connection errors
     if (errorMessage.includes('Can\'t reach database') || 

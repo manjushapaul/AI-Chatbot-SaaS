@@ -68,7 +68,7 @@ export class APIUsageService {
    */
   async canMakeAPICall(tenantId: string): Promise<RateLimitInfo> {
     try {
-      const tenant = await (prisma as any).tenants.findUnique({
+      const tenant = await prisma.tenants.findUnique({
         where: { id: tenantId }
       });
 

@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { randomUUID } from 'crypto';
 import { stripeService, PlanDetails } from './stripe';
 import { planLimitsService } from './plan-limits';
 
@@ -437,7 +438,6 @@ export class SubscriptionService {
     const fromPlanDetails = stripeService.getPlan(fromPlan);
     const toPlanDetails = stripeService.getPlan(toPlan);
 
-    const { randomUUID } = require('crypto');
     const billingId = randomUUID().replace(/-/g, '');
     const now = new Date();
     

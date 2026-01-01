@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest) {
     const { name, customDomain, branding } = await request.json();
 
     // Update tenant settings
-    const updatedTenant = await (prisma as any).tenants.update({
+    const updatedTenant = await prisma.tenants.update({
       where: { id: tenant.id },
       data: {
         name: name || undefined,

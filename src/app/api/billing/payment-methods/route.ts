@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get subscription to find Stripe customer ID
-    const subscription = await (prisma as any).subscriptions.findUnique({
+    const subscription = await prisma.subscriptions.findUnique({
       where: { tenantId: tenantContext.id }
     });
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get subscription to find Stripe customer ID
-    const subscription = await (prisma as any).subscriptions.findUnique({
+    const subscription = await prisma.subscriptions.findUnique({
       where: { tenantId: tenantContext.id }
     });
 
@@ -177,7 +177,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get subscription to find Stripe customer ID
-    const subscription = await (prisma as any).subscriptions.findUnique({
+    const subscription = await prisma.subscriptions.findUnique({
       where: { tenantId: tenantContext.id }
     });
 

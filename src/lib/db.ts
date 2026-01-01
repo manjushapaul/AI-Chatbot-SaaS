@@ -1,5 +1,18 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
+// Use Web Crypto API which works in both Node.js and Edge Runtime
+function randomUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older Node.js versions (shouldn't be needed in modern Node.js)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -30,7 +43,7 @@ export class TenantDB {
 
     try {
       // Start with absolute simplest query - no relations, no complex filters, no orderBy
-      const bots = await (prisma as any).bots.findMany({
+      const bots = await prisma.bots.findMany({
         where: { 
           tenantId: this.tenantId,
         },
@@ -49,7 +62,7 @@ export class TenantDB {
 
       // Add empty relations for now - we can enhance this later if needed
       // This prevents any relation query errors from breaking the API
-      return bots.map((bot: any) => ({
+      return bots.map((bot: Record<string, unknown>) => ({
         ...bot,
         knowledge_bases: [],
         widgets: [],
@@ -60,7 +73,7 @@ export class TenantDB {
     } catch (error) {
       console.error(`[TenantDB] Error fetching bots for tenant ${this.tenantId}:`, error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorCode = (error as { code?: string })?.code;
       const errorStack = error instanceof Error ? error.stack : 'No stack';
       console.error(`[TenantDB] Error details: ${errorMessage}`);
       console.error(`[TenantDB] Error code: ${errorCode || 'N/A'}`);
@@ -72,7 +85,7 @@ export class TenantDB {
   }
 
   async getBot(id: string) {
-    return (prisma as any).bots.findFirst({
+    return prisma.bots.findFirst({
       where: { id, tenantId: this.tenantId },
       include: {
         knowledge_bases: {
@@ -108,11 +121,10 @@ export class TenantDB {
       }
 
       // Generate a unique ID for the bot
-      const { randomUUID } = require('crypto');
       const botId = randomUUID().replace(/-/g, '');
       const now = new Date();
       
-      const bot = await (prisma as any).bots.create({
+      const bot = await prisma.bots.create({
         data: {
           id: botId,
           ...data,
@@ -129,14 +141,14 @@ export class TenantDB {
     } catch (error) {
       console.error('[TenantDB] Error creating bot:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorCode = (error as { code?: string })?.code;
       
       // Check for database connection errors
       if (errorCode === 'P1001' || errorCode === 'P1000' || 
           errorMessage.includes('Can\'t reach database') ||
           errorMessage.includes('connection')) {
         const connectionError = new Error('Database connection failed');
-        (connectionError as any).code = errorCode;
+        (connectionError as Error & { code?: string }).code = errorCode;
         throw connectionError;
       }
       
@@ -234,7 +246,6 @@ export class TenantDB {
     description?: string;
     botId: string;
   }) {
-    const { randomUUID } = require('crypto');
     const kbId = randomUUID().replace(/-/g, '');
     const now = new Date();
     
@@ -819,7 +830,7 @@ export class TenantDB {
   }
 
   async deleteWidget(id: string) {
-    return (prisma as any).widgets.delete({
+    return prisma.widgets.delete({
       where: { id, tenantId: this.tenantId },
     });
   }

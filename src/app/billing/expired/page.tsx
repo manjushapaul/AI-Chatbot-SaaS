@@ -20,7 +20,13 @@ export default function TrialExpiredPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [subscription, setSubscription] = useState<any>(null);
+  const [subscription, setSubscription] = useState<{
+    id: string;
+    plan: string;
+    status: string;
+    trialEndsAt?: Date | string;
+    isTrialExpired?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (session?.user?.tenantId) {
@@ -65,8 +71,9 @@ export default function TrialExpiredPage() {
         router.push('/dashboard');
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to upgrade. Please try again.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,8 +98,9 @@ export default function TrialExpiredPage() {
       // Refresh session and redirect to dashboard
       router.push('/dashboard');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to downgrade. Please try again.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to downgrade. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -293,6 +301,7 @@ export default function TrialExpiredPage() {
     </div>
   );
 }
+
 
 
 

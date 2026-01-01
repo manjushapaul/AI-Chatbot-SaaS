@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
@@ -60,7 +61,6 @@ export default function AuthErrorPage() {
     </div>
   );
 }
-
 
 
 

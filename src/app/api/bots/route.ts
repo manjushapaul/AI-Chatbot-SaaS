@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     console.log('[Bots API] Fetching bots for tenant:', session.user.tenantId);
 
     // Get all bots for the tenant with comprehensive error handling
-    let bots: any[] = [];
+    let bots: Array<Record<string, unknown>> = [];
     
     try {
       // Verify Prisma client is available
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       console.error('[Bots API] Database error:', dbError);
       const errorDetails = dbError instanceof Error ? dbError.message : String(dbError);
-      const errorCode = (dbError as any)?.code;
+      const errorCode = (dbError as { code?: string })?.code;
       const errorStack = dbError instanceof Error ? dbError.stack : 'No stack';
       console.error('[Bots API] Error details:', errorDetails);
       console.error('[Bots API] Error code:', errorCode || 'N/A');
