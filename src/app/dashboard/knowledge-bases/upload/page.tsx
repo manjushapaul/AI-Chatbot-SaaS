@@ -39,7 +39,6 @@ interface UploadedFile {
   progress: number;
   error?: string;
   uploadedAt: Date;
-  file: File; // Store the actual File object
 }
 
 interface KnowledgeBaseConfig {
@@ -130,8 +129,7 @@ export default function KnowledgeBaseUploadPage() {
       type: file.type,
       status: 'UPLOADING',
       progress: 0,
-      uploadedAt: new Date(),
-      file: file // Store the actual File object
+      uploadedAt: new Date()
     }));
 
     setFiles(prev => [...prev, ...uploadFiles]);
