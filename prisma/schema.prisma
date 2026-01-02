@@ -5,7 +5,9 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // DIRECT_URL is optional - Prisma will use DATABASE_URL if DIRECT_URL is not set
+  // Uncomment below if you need direct connection for migrations
+  // directUrl = env("DIRECT_URL")
 }
 
 model api_keys {

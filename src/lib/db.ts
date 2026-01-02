@@ -17,8 +17,17 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Ensure DATABASE_URL is set (check only at runtime, not during module evaluation)
+// This prevents build-time errors when env vars aren't loaded yet
+if (typeof window === 'undefined' && !process.env.DATABASE_URL) {
+  // Only log in server-side contexts, and don't block module loading
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('⚠️ DATABASE_URL is not set in environment variables!');
+  }
+}
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn', 'query'] : ['error'],
 });
 
 // Don't test connection on startup - let it fail lazily when actually used

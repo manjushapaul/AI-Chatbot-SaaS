@@ -119,14 +119,26 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Invalid tenant subdomain');
           }
 
-          // Get tenant by subdomain
+          // Get tenant by subdomain - Prisma will connect automatically when needed
+          // Trim and lowercase to handle any whitespace/case issues
+          const tenantSubdomain = tenant.trim().toLowerCase();
+          console.log('[Auth] Querying tenant subdomain:', tenantSubdomain);
+          
           const tenantRecord = await prisma.tenants.findUnique({
-            where: { subdomain: tenant },
+            where: { subdomain: tenantSubdomain },
             include: { users: true }
           });
           
           if (!tenantRecord) {
             recordFailedLoginAttempt(email);
+            console.error('[Auth] Tenant not found:', tenantSubdomain);
+            // List available tenants for debugging
+            const availableTenants = await prisma.tenants.findMany({
+              where: { status: 'ACTIVE' },
+              select: { subdomain: true },
+              take: 10
+            });
+            console.error('[Auth] Available tenants:', availableTenants.map(t => t.subdomain).join(', '));
             throw new Error('Tenant not found');
           }
 
@@ -196,11 +208,49 @@ export const authOptions: NextAuthOptions = {
             }
           };
         } catch (error) {
+          // Enhanced error logging for debugging
+          console.error('=== AUTH ERROR START ===');
+          console.error('Auth error type:', typeof error);
           console.error('Auth error:', error);
-          // Don't expose internal errors to the client
-          if (error instanceof Error && error.message.includes('locked')) {
-            throw error; // Allow lockout messages to pass through
+          
+          if (error instanceof Error) {
+            console.error('Auth error message:', error.message);
+            console.error('Auth error name:', error.name);
+            console.error('Auth error code:', (error as any).code);
+            console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            
+            if (error.stack) {
+              console.error('Auth error stack:', error.stack);
+            }
+            
+            // Check for database connection errors
+            const errorMsg = error.message.toLowerCase();
+            const errorCode = (error as any).code;
+            
+            // Log the actual error message more prominently
+            console.error('🔴 ACTUAL ERROR MESSAGE:', error.message);
+            
+            if (errorMsg.includes('authentication') || 
+                errorMsg.includes('database') || 
+                errorMsg.includes('connection') ||
+                errorMsg.includes('prisma') ||
+                errorCode === 'P1001' ||
+                errorCode === 'P1000' ||
+                errorCode === 'P1003') {
+              console.error('⚠️ Database connection error during authentication');
+              console.error('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+              console.error('DATABASE_URL value:', process.env.DATABASE_URL?.substring(0, 80) + '...');
+              console.error('DIRECT_URL exists:', !!process.env.DIRECT_URL);
+              console.error('Error code:', errorCode);
+            }
+            // Allow lockout messages to pass through
+            if (error.message.includes('locked')) {
+              throw error;
+            }
+          } else {
+            console.error('Error is not an Error instance:', error);
           }
+          console.error('=== AUTH ERROR END ===');
           throw new Error('Authentication failed');
         }
       }
