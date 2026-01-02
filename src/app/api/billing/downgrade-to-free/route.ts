@@ -6,6 +6,10 @@ import { subscriptionService } from '@/lib/subscription-service';
 import { stripeService } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -81,10 +85,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error downgrading to free:', error);
-    // return NextResponse.json(
-    //   { error: 'Failed to downgrade to free plan' },
-    //   { status: 500 }
-    // );
+    return NextResponse.json(
+      { error: 'Failed to downgrade to free plan' },
+      { status: 500 }
+    );
   }
 }
 
