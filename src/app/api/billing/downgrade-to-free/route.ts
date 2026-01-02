@@ -6,9 +6,6 @@ import { subscriptionService } from '@/lib/subscription-service';
 import { stripeService } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
