@@ -284,42 +284,6 @@ export class SubscriptionService {
   }
 
   /**
-   * Check if trial is expired (server-side check)
-   */
-  async isTrialExpired(tenantId: string): Promise<boolean> {
-    try {
-      const subscription = await this.getSubscription(tenantId);
-      if (!subscription || !subscription.trialEndsAt) {
-        return false;
-      }
-      
-      const now = new Date();
-      const trialEndDate = subscription.trialEndsAt instanceof Date 
-        ? subscription.trialEndsAt 
-        : new Date(subscription.trialEndsAt);
-      const isExpired = trialEndDate <= now;
-      
-      // Update isTrialExpired flag if it's out of sync
-      if (isExpired !== subscription.isTrialExpired) {
-        try {
-          await prisma.subscriptions.update({
-            where: { id: subscription.id },
-            data: { isTrialExpired: isExpired }
-          });
-        } catch (updateError) {
-          console.error('Error updating isTrialExpired flag:', updateError);
-          // Continue even if update fails
-        }
-      }
-      
-      return isExpired;
-    } catch (error) {
-      console.error('Error checking trial expiration:', error);
-      return false; // Don't block on error
-    }
-  }
-
-  /**
    * Get subscription status
    */
   async getSubscriptionStatus(tenantId: string): Promise<SubscriptionStatus> {
@@ -337,11 +301,8 @@ export class SubscriptionService {
       };
     }
 
-    // Check if trial is expired
-    const trialExpired = await this.isTrialExpired(tenantId);
-
     return {
-      isActive: subscription.status === 'ACTIVE' && !trialExpired,
+      isActive: subscription.status === 'ACTIVE',
       currentPlan: subscription.plan,
       status: subscription.status,
       currentPeriodEnd: subscription.currentPeriodEnd,

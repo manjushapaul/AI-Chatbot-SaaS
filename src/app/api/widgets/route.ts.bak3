@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    }
+
     const tenantDB = createTenantDB(tenantContext.id);
     
     // Validate bot exists and belongs to tenant
@@ -114,4 +116,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+} 

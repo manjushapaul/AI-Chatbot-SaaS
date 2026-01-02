@@ -7,7 +7,6 @@ import { DocumentProcessor, ProcessedDocument as _ProcessedDocument, DocumentChu
 import { createAIService as _createAIService } from '../../../../lib/ai';
 import { embeddingsService as _embeddingsService } from '../../../../lib/embeddings';
 import { vectorDB as _vectorDB } from '../../../../lib/vector-db';
-import { canPerformPaidAction } from '../../../../lib/trial-check';
 
 // Helper function to get file type from filename
 function getFileTypeFromName(fileName: string): string {
@@ -46,17 +45,6 @@ export async function POST(request: NextRequest) {
 
     // Auto-detect action: if files and knowledgeBaseId are present, it's a document upload
     const isDocumentUpload = (!action && files.length > 0 && knowledgeBaseId) || action === 'upload_documents';
-
-    // Check if trial expired for create/upload actions
-    if (action === 'create_knowledge_base' || isDocumentUpload) {
-      const canPerform = await canPerformPaidAction(tenant.id);
-      if (!canPerform.allowed) {
-        return NextResponse.json(
-          { error: canPerform.reason || 'Trial expired. Please upgrade to continue.' },
-          { status: 403 }
-        );
-      }
-    }
 
     if (action === 'create_knowledge_base') {
       // Handle knowledge base creation

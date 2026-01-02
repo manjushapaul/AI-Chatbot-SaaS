@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       tenantId: tenantContext.id,
       newPlanId: 'FREE',
       userId: session.user.id,
-      reason: 'Trial expired - downgrade to free'
+      reason: 'Downgrade to free plan'
     });
 
     if (!result.success) {
@@ -52,14 +52,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update subscription to mark trial as expired and set to free
+    // Update subscription to set to free
     if (subscription) {
       await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
           plan: 'FREE',
           status: 'INACTIVE',
-          isTrialExpired: true,
           cancelAtPeriodEnd: false,
           updatedAt: new Date()
         }
@@ -88,6 +87,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
 

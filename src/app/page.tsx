@@ -28,20 +28,17 @@ import { UseCasesSection } from '@/components/sections/UseCasesSection';
 import { HowItWorksSection } from '@/components/sections/HowItWorksSection';
 import { PricingSection } from '@/components/sections/PricingSection';
 import { HeroWhoWeHelp } from '@/components/landing/HeroWhoWeHelp';
-import { FreeTrialModal } from '@/components/FreeTrialModal';
-
 export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [freeTrialModalOpen, setFreeTrialModalOpen] = useState(false);
 
-  const handleStartFreeTrial = () => {
+  const handleGetStarted = () => {
     if (session) {
       router.push('/dashboard');
     } else {
-      setFreeTrialModalOpen(true);
+      router.push('/auth/signup');
     }
   };
 
@@ -124,10 +121,10 @@ export default function LandingPage() {
                 Sign in
               </button>
               <button
-                onClick={handleStartFreeTrial}
+                onClick={handleGetStarted}
                 className="px-5 py-2 bg-amber-600 text-white text-sm font-medium rounded-full hover:bg-amber-700 transition-colors shadow-sm hover:shadow-md"
               >
-                Start free trial
+                Get Started
               </button>
             </div>
 
@@ -156,10 +153,10 @@ export default function LandingPage() {
                   Sign in
                 </button>
                 <button
-                  onClick={handleStartFreeTrial}
+                  onClick={handleGetStarted}
                   className="w-full px-5 py-2 bg-amber-600 text-white text-sm font-medium rounded-full hover:bg-amber-700 transition-colors"
                 >
-                  Start free trial
+                  Get Started
                 </button>
               </div>
             </div>
@@ -188,7 +185,7 @@ export default function LandingPage() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleStartFreeTrial();
+                    handleGetStarted();
                   }}
                   className="flex flex-col sm:flex-row gap-3"
                 >
@@ -202,7 +199,7 @@ export default function LandingPage() {
                     type="submit"
                     className="px-6 py-3 bg-amber-600 text-white font-medium rounded-full hover:bg-amber-700 transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
                   >
-                    Start free
+                    Get Started
                   </button>
                 </form>
 
@@ -211,10 +208,6 @@ export default function LandingPage() {
                   <span className="flex items-center space-x-2">
                     <Check className="w-4 h-4 text-amber-600 flex-shrink-0" />
                     <span>No credit card required</span>
-                  </span>
-                  <span className="flex items-center space-x-2">
-                    <Check className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                    <span>14-day free trial</span>
                   </span>
                 </div>
 
@@ -469,7 +462,7 @@ export default function LandingPage() {
      
 
         {/* Pricing Section */}
-        <PricingSection onCtaClick={handleStartFreeTrial} />
+        <PricingSection onCtaClick={handleGetStarted} />
 
         {/* FAQ Section */}
         <section id="faq" className="py-12 bg-gradient-to-b from-[#fff7eb] via-[#ffe9d2] to-[#fff7eb]">
@@ -590,11 +583,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Free Trial Modal */}
-      <FreeTrialModal 
-        open={freeTrialModalOpen} 
-        onClose={() => setFreeTrialModalOpen(false)} 
-      />
       </div>
     );
 }

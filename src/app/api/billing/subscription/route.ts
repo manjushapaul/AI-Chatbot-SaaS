@@ -29,10 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Get subscription directly from database
     console.log('[API] Fetching subscription for tenantId:', tenantId);
-    console.log('[API] Prisma models available:', Object.keys(prisma).filter(k => !k.startsWith('_') && !k.startsWith('$')));
-    console.log('[API] prisma.subscriptions type:', typeof prisma.subscriptions);
-    
-    // Try to access subscriptions model
+    // Get subscription from database
     let subscription;
     try {
       subscription = await prisma.subscriptions.findFirst({
@@ -51,8 +48,6 @@ export async function GET(request: NextRequest) {
           currentPeriodEnd: new Date().toISOString(),
           cancelAtPeriodEnd: false,
           nextBillingDate: new Date().toISOString(),
-          trialEndsAt: null,
-          isTrialExpired: false
         }
       });
     }
@@ -60,9 +55,7 @@ export async function GET(request: NextRequest) {
     console.log('[API] Subscription found:', !!subscription);
     if (subscription) {
       console.log('[API] Subscription data:', {
-        status: subscription.status,
-        trialEndsAt: subscription.trialEndsAt,
-        isTrialExpired: subscription.isTrialExpired
+        status: subscription.status
       });
     }
 
@@ -76,42 +69,19 @@ export async function GET(request: NextRequest) {
           currentPeriodEnd: new Date().toISOString(),
           cancelAtPeriodEnd: false,
           nextBillingDate: new Date().toISOString(),
-          trialEndsAt: null,
-          isTrialExpired: false
         }
       });
-    }
-
-    // Check if trial is actually expired (server-side check)
-    const now = new Date();
-    const trialEnd = subscription.trialEndsAt;
-    const isExpired = trialEnd ? new Date(trialEnd) <= now : false;
-    
-    // Update isTrialExpired flag if needed
-    if (isExpired && !subscription.isTrialExpired) {
-      try {
-        await prisma.subscriptions.update({
-          where: { id: subscription.id },
-          data: { isTrialExpired: true }
-        });
-        console.log('[API] Updated isTrialExpired flag to true');
-      } catch (updateError) {
-        console.error('[API] Error updating trial flag:', updateError);
-        // Continue even if update fails
-      }
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        isActive: subscription.status === 'ACTIVE' && !isExpired,
+        isActive: subscription.status === 'ACTIVE',
         currentPlan: subscription.plan,
         status: subscription.status,
         currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() || new Date().toISOString(),
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        nextBillingDate: subscription.currentPeriodEnd?.toISOString() || new Date().toISOString(),
-        trialEndsAt: subscription.trialEndsAt?.toISOString() || null,
-        isTrialExpired: isExpired || subscription.isTrialExpired || false
+        nextBillingDate: subscription.currentPeriodEnd?.toISOString() || new Date().toISOString()
       }
     });
   } catch (error) {

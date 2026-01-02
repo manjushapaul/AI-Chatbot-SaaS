@@ -4,8 +4,8 @@ import { getToken } from 'next-auth/jwt';
 // Protected paths that require authentication
 const PROTECTED_PATHS = ['/dashboard'];
 
-// Public paths that should always be accessible even if trial expired
-const PUBLIC_PATHS = ['/', '/pricing', '/auth', '/billing/expired'];
+// Public paths that should always be accessible
+const PUBLIC_PATHS = ['/', '/pricing', '/auth'];
 
 export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
@@ -56,10 +56,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(signInUrl);
     }
 
-    // Check trial expiration for authenticated users
-    // Note: Prisma cannot be used in Edge Runtime middleware
-    // This check is moved to API routes or server components instead
-    // For now, we skip this check in middleware to avoid Edge Runtime issues
   }
 
   // Continue with tenant extraction for authenticated or public routes

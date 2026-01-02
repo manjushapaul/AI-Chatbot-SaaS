@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createTenantDB } from '@/lib/db';
 import { prisma } from '@/lib/db';
-import { canPerformPaidAction } from '@/lib/trial-check';
 
 export async function GET(request: NextRequest) {
   // Wrap everything in try-catch to ensure we never return 500
@@ -122,15 +121,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Bot name is required' },
         { status: 400 }
-      );
-    }
-
-    // Check if trial expired
-    const canPerform = await canPerformPaidAction(session.user.tenantId);
-    if (!canPerform.allowed) {
-      return NextResponse.json(
-        { error: canPerform.reason || 'Trial expired. Please upgrade to continue.' },
-        { status: 403 }
       );
     }
 

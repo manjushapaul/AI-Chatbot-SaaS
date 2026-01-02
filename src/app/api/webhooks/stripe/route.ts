@@ -10,8 +10,6 @@ interface StripeSubscription {
   };
   customer?: string;
   status?: string;
-  trial_start?: number;
-  trial_end?: number;
   current_period_start?: number;
   current_period_end?: number;
   cancel_at_period_end?: boolean;
@@ -86,10 +84,6 @@ export async function POST(request: NextRequest) {
         await handlePaymentFailed(event.data.object as StripeInvoice);
         break;
 
-      case 'customer.subscription.trial_will_end':
-        await handleTrialWillEnd(event.data.object as StripeSubscription);
-        break;
-
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -116,10 +110,6 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
     const priceId = subscription.items?.data?.[0]?.price?.id;
     const planId = priceId ? await getPlanIdFromPriceId(priceId) : 'FREE';
     
-    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
-    const now = new Date();
-    const isTrialExpired = trialEnd ? trialEnd <= now : false;
-    
     // Create or update subscription record
     await prisma.subscriptions.upsert({
       where: { tenantId },
@@ -128,9 +118,7 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: priceId,
-        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID',
-        trialEndsAt: trialEnd,
-        isTrialExpired: isTrialExpired,
+        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID',
         currentPeriodStart: new Date(subscription.current_period_start! * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -143,9 +131,7 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: priceId,
-        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID',
-        trialEndsAt: trialEnd,
-        isTrialExpired: isTrialExpired,
+        status: (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID',
         currentPeriodStart: new Date(subscription.current_period_start! * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -154,15 +140,15 @@ async function handleSubscriptionCreated(subscription: StripeSubscription) {
       }
     });
 
-    // Only update tenant plan if not in trial or trial expired with payment
-    if (subscription.status === 'ACTIVE' && !isTrialExpired) {
+    // Update tenant plan if subscription is active
+    if (subscription.status === 'ACTIVE') {
       await prisma.tenants.update({
         where: { id: tenantId },
         data: { plan: planId as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL' }
       });
     }
 
-    console.log(`Subscription created for tenant ${tenantId}, plan ${planId}, trial ends: ${trialEnd}`);
+    console.log(`Subscription created for tenant ${tenantId}, plan ${planId}`);
   } catch (error) {
     console.error('Error handling subscription created:', error);
   }
@@ -180,23 +166,14 @@ async function handleSubscriptionUpdated(subscription: StripeSubscription) {
     const priceId = subscription.items?.data?.[0]?.price?.id;
     const planId = priceId ? await getPlanIdFromPriceId(priceId) : 'FREE';
 
-    const now = new Date();
-    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
-    const isTrialExpired = trialEnd ? trialEnd <= now : false;
-    const status = (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'UNPAID';
-
-    // If trial ended and status is still TRIALING, mark as expired
-    const finalStatus = (status === 'TRIALING' && isTrialExpired) ? 'TRIALING' : status;
-    const finalIsTrialExpired = (status === 'TRIALING' && isTrialExpired) || (status === 'ACTIVE' && !subscription.trial_end);
+    const status = (subscription.status?.toUpperCase() || 'ACTIVE') as 'ACTIVE' | 'INACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID';
 
     // Update subscription record
     await prisma.subscriptions.updateMany({
       where: { tenantId },
       data: {
         plan: planId as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL',
-        status: finalStatus,
-        trialEndsAt: trialEnd,
-        isTrialExpired: finalIsTrialExpired,
+        status: status,
         currentPeriodStart: new Date(subscription.current_period_start! * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end! * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -204,16 +181,15 @@ async function handleSubscriptionUpdated(subscription: StripeSubscription) {
       }
     });
 
-    // If trial expired and no payment, keep on FREE plan
-    // If payment succeeded, update tenant plan
-    if (status === 'ACTIVE' && !isTrialExpired) {
+    // Update tenant plan if subscription is active
+    if (status === 'ACTIVE') {
       await prisma.tenants.update({
         where: { id: tenantId },
         data: { plan: planId as 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' | 'WHITE_LABEL' }
       });
     }
 
-    console.log(`Subscription updated for tenant ${tenantId}, plan ${planId}, trial expired: ${finalIsTrialExpired}`);
+    console.log(`Subscription updated for tenant ${tenantId}, plan ${planId}`);
   } catch (error) {
     console.error('Error handling subscription updated:', error);
   }
@@ -266,13 +242,10 @@ async function handlePaymentSucceeded(invoice: StripeInvoice) {
           where: { stripeSubscriptionId: subscriptionId }
         });
         if (sub) {
-          const tenantId = sub.tenantId;
-          
-          // Update subscription to clear trial expiration
+          // Update subscription status
           await prisma.subscriptions.update({
             where: { id: sub.id },
             data: {
-              isTrialExpired: false,
               status: 'ACTIVE',
               updatedAt: new Date()
             }
@@ -318,12 +291,11 @@ async function handlePaymentSucceeded(invoice: StripeInvoice) {
       where: { tenantId }
     });
 
-    // Update subscription to clear trial expiration
+    // Update subscription status
     if (subscription) {
       await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: {
-          isTrialExpired: false,
           status: 'ACTIVE',
           updatedAt: new Date()
         }
@@ -401,35 +373,6 @@ async function handlePaymentFailed(invoice: StripeInvoice) {
     console.log(`Payment failed for tenant ${tenantId}`);
   } catch (error) {
     console.error('Error handling payment failed:', error);
-  }
-}
-
-async function handleTrialWillEnd(subscription: StripeSubscription) {
-  try {
-    const tenantId = subscription.metadata?.tenantId;
-    if (!tenantId) {
-      console.error('No tenant ID in subscription metadata');
-      return;
-    }
-
-    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
-    
-    // Update subscription with trial end date
-    if (trialEnd) {
-      await prisma.subscriptions.updateMany({
-        where: { tenantId },
-        data: {
-          trialEndsAt: trialEnd,
-          updatedAt: new Date()
-        }
-      });
-    }
-
-    // TODO: Send email notification (3-7 days before trial ends)
-    // This would integrate with your notification system
-    console.log(`Trial will end for tenant ${tenantId} on ${trialEnd}`);
-  } catch (error) {
-    console.error('Error handling trial will end:', error);
   }
 }
 
