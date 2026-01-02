@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error downgrading to free:', error);
-    return NextResponse.json(
-      { error: 'Failed to downgrade to free plan' },
-      { status: 500 }
-    );
+    // return NextResponse.json(
+    //   { error: 'Failed to downgrade to free plan' },
+    //   { status: 500 }
+    // );
   }
 }
 
