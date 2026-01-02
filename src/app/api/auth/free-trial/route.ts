@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { sendTrialStartNotification } from '@/lib/trial-notifications';
 import { randomUUID } from 'crypto';
+import { LemonSqueezy } from '@lemonsqueezy/js';
 
 const freeTrialSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -14,6 +15,10 @@ const freeTrialSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize INSIDE handler only (env vars available)
+    // Lazy initialization - only created when handler is called
+    const _lemonSqueezy = new LemonSqueezy(process.env.LEMON_SQUEEZY_API_KEY!);
+    
     const body = await request.json();
     const { email, password, company } = freeTrialSchema.parse(body);
 
