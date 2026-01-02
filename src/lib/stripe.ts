@@ -3,7 +3,7 @@ import { prisma } from './db';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
+  apiVersion: '2025-08-27.basil',
 });
 
 export interface PlanDetails {
@@ -466,7 +466,11 @@ export class StripeService {
    */
   async refundPayment(paymentIntentId: string, amount?: number, reason?: string): Promise<void> {
     try {
-      const refundData: { payment_intent: string; amount?: number; reason?: string; [key: string]: unknown } = {
+      const refundData: {
+        payment_intent: string;
+        amount?: number;
+        reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+      } = {
         payment_intent: paymentIntentId,
       };
 
@@ -474,7 +478,7 @@ export class StripeService {
         refundData.amount = Math.round(amount * 100);
       }
 
-      if (reason) {
+      if (reason && (reason === 'duplicate' || reason === 'fraudulent' || reason === 'requested_by_customer')) {
         refundData.reason = reason;
       }
 
@@ -621,7 +625,7 @@ export class StripeService {
   async getSubscriptionUsage(subscriptionId: string): Promise<{ usage?: number; [key: string]: unknown }> {
     // This will be implemented when metered billing is needed
     console.log('Usage records not yet implemented');
-    return [];
+    return { usage: 0 };
   }
 
   /**

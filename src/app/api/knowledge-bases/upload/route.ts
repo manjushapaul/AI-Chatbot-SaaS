@@ -3,10 +3,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { getTenantContext } from '../../../../lib/tenant';
 import { createTenantDB } from '../../../../lib/db';
-import { DocumentProcessor, ProcessedDocument, DocumentChunk } from '../../../../lib/document-processor';
-import { createAIService } from '../../../../lib/ai';
-import { embeddingsService } from '../../../../lib/embeddings';
-import { vectorDB } from '../../../../lib/vector-db';
+import { DocumentProcessor, ProcessedDocument as _ProcessedDocument, DocumentChunk as _DocumentChunk } from '../../../../lib/document-processor';
+import { createAIService as _createAIService } from '../../../../lib/ai';
+import { embeddingsService as _embeddingsService } from '../../../../lib/embeddings';
+import { vectorDB as _vectorDB } from '../../../../lib/vector-db';
 import { canPerformPaidAction } from '../../../../lib/trial-check';
 
 // Helper function to get file type from filename
@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
       // Handle document upload
       const kbId = knowledgeBaseId || formData.get('knowledgeBaseId') as string;
       const uploadFiles = files.length > 0 ? files : (formData.getAll('files') as File[]);
-      const chunkSize = parseInt(formData.get('chunkSize') as string) || 1000;
-      const overlap = parseInt(formData.get('overlap') as string) || 200;
+      const _chunkSize = parseInt(formData.get('chunkSize') as string) || 1000;
+      const _overlap = parseInt(formData.get('overlap') as string) || 200;
 
       if (!kbId || uploadFiles.length === 0) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

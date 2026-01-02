@@ -118,15 +118,21 @@ export function getAuthRedirectUrl(role: string, tenantSubdomain: string): strin
 export function sanitizeAuthError(error: unknown): string {
   if (typeof error === 'string') return error;
   
-  if (error?.message) {
-    // Don't expose internal errors to users
-    if (error.message.includes('password') || error.message.includes('credentials')) {
-      return 'Invalid credentials';
+  if (error && typeof error === 'object' && 'message' in error) {
+    const errorMessage = typeof (error as { message: unknown }).message === 'string' 
+      ? (error as { message: string }).message 
+      : null;
+    
+    if (errorMessage) {
+      // Don't expose internal errors to users
+      if (errorMessage.includes('password') || errorMessage.includes('credentials')) {
+        return 'Invalid credentials';
+      }
+      if (errorMessage.includes('tenant')) {
+        return 'Tenant not found or access denied';
+      }
+      return 'Authentication failed';
     }
-    if (error.message.includes('tenant')) {
-      return 'Tenant not found or access denied';
-    }
-    return 'Authentication failed';
   }
   
   return 'An unexpected error occurred';

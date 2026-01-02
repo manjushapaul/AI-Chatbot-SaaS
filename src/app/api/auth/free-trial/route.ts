@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { sendTrialStartNotification } from '@/lib/trial-notifications';
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const emailLower = email.toLowerCase();
 
     // Check if user email already exists globally
-    const existingUser = await prisma.users.findFirst({
+    const existingUser = await (prisma as PrismaClient).users.findFirst({
       where: { email: emailLower }
     });
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Ensure subdomain is valid and unique
     let finalSubdomain = tenantSubdomain;
     let counter = 1;
-    while (await prisma.tenants.findUnique({ where: { subdomain: finalSubdomain } })) {
+    while (await (prisma as PrismaClient).tenants.findUnique({ where: { subdomain: finalSubdomain } })) {
       finalSubdomain = `${tenantSubdomain}${counter}`;
       counter++;
     }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     // Create new tenant
     const tenantId = randomUUID().replace(/-/g, '');
     const now = new Date();
-    const newTenant = await prisma.tenants.create({
+    const newTenant = await (prisma as PrismaClient).tenants.create({
       data: {
         id: tenantId,
         name: company?.trim() || `${name}'s Organization`,
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Create user as tenant admin
     const userId = randomUUID().replace(/-/g, '');
-    const user = await prisma.users.create({
+    const user = await (prisma as PrismaClient).users.create({
       data: {
         id: userId,
         email: emailLower,
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     // Create initial subscription record for the tenant (14-day trial)
     const subscriptionId = randomUUID().replace(/-/g, '');
     const trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
-    await prisma.subscriptions.create({
+    await (prisma as PrismaClient).subscriptions.create({
       data: {
         id: subscriptionId,
         tenantId: newTenant.id,

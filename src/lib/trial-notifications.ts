@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { randomUUID } from 'crypto';
 import { subscriptionService } from './subscription-service';
 
 /**
@@ -21,6 +22,7 @@ export async function sendTrialStartNotification(tenantId: string, userId: strin
     // Create in-app notification
     await prisma.notifications.create({
       data: {
+        id: randomUUID().replace(/-/g, ''),
         userId,
         tenantId,
         type: 'BILLING',
@@ -32,7 +34,8 @@ export async function sendTrialStartNotification(tenantId: string, userId: strin
         metadata: {
           trialEndsAt: trialEndDate.toISOString(),
           type: 'trial_start'
-        }
+        },
+        createdAt: new Date()
       }
     });
 
@@ -77,6 +80,7 @@ export async function sendTrialEndingSoonNotification(tenantId: string, userId: 
     // Create in-app notification
     await prisma.notifications.create({
       data: {
+        id: randomUUID().replace(/-/g, ''),
         userId,
         tenantId,
         type: 'BILLING',
@@ -89,7 +93,8 @@ export async function sendTrialEndingSoonNotification(tenantId: string, userId: 
           trialEndsAt: trialEndDate.toISOString(),
           daysRemaining,
           type: 'trial_ending_soon'
-        }
+        },
+        createdAt: new Date()
       }
     });
 
@@ -115,6 +120,7 @@ export async function sendTrialExpiredNotification(tenantId: string, userId: str
     // Create in-app notification
     await prisma.notifications.create({
       data: {
+        id: randomUUID().replace(/-/g, ''),
         userId,
         tenantId,
         type: 'BILLING',
@@ -125,7 +131,8 @@ export async function sendTrialExpiredNotification(tenantId: string, userId: str
         actionUrl: '/billing/expired',
         metadata: {
           type: 'trial_expired'
-        }
+        },
+        createdAt: new Date()
       }
     });
 
@@ -201,6 +208,7 @@ export async function checkAndSendTrialNotifications(tenantId: string) {
     console.error('Error checking trial notifications:', error);
   }
 }
+
 
 
 

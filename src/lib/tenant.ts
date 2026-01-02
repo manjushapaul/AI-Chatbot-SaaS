@@ -20,24 +20,31 @@ export async function getTenantContext(): Promise<TenantContext | null> {
       
       if (session?.user?.tenantId) {
         // Get tenant details from database
-        const tenant = await prisma.tenants.findUnique({
-          where: { id: session.user.tenantId }
-        });
+        try {
+          const tenant = await prisma.tenants.findUnique({
+            where: { id: session.user.tenantId }
+          });
 
-        console.log('[getTenantContext] Tenant from DB:', tenant?.subdomain);
+          console.log('[getTenantContext] Tenant from DB:', tenant?.subdomain);
 
-        if (tenant) {
-          return {
-            id: tenant.id,
-            subdomain: tenant.subdomain,
-            name: tenant.name,
-            plan: tenant.plan,
-            status: tenant.status,
-          };
+          if (tenant) {
+            return {
+              id: tenant.id,
+              subdomain: tenant.subdomain,
+              name: tenant.name,
+              plan: tenant.plan,
+              status: tenant.status,
+            };
+          }
+        } catch (dbError) {
+          console.error('[getTenantContext] Database error:', dbError);
+          // If database connection fails, return null instead of crashing
+          return null;
         }
       }
     } catch (sessionError) {
       console.log('[getTenantContext] Session-based tenant context failed:', sessionError);
+      // Don't throw, just continue to next method
     }
 
     // PRIORITY 2: Try to get from headers (for multi-tenant setups)
@@ -59,6 +66,8 @@ export async function getTenantContext(): Promise<TenantContext | null> {
     return null;
   } catch (error) {
     console.error('[getTenantContext] Error getting tenant context:', error);
+    // Return null instead of throwing to prevent crashes
+    // This allows the app to continue even if tenant context can't be determined
     return null;
   }
 }
@@ -85,7 +94,7 @@ export function getTenantFromRequest(request: Request): TenantContext | null {
     if (hostParts.length < 2) return null;
     
     const subdomain = hostParts[0];
-    const domain = hostParts.slice(1).join('.');
+    const _domain = hostParts.slice(1).join('.');
     
     if (subdomain === 'www' || subdomain === 'app') return null;
     

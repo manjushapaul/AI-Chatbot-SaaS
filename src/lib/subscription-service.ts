@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { $Enums } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { stripeService, PlanDetails } from './stripe';
 import { planLimitsService } from './plan-limits';
@@ -149,7 +150,7 @@ export class SubscriptionService {
     // Update tenant plan
     await prisma.tenants.update({
       where: { id: tenantId },
-      data: { plan: newPlanId }
+      data: { plan: newPlanId as $Enums.Plan }
     });
 
     // Update subscription record
@@ -157,8 +158,8 @@ export class SubscriptionService {
       await prisma.subscriptions.updateMany({
         where: { tenantId },
         data: {
-          plan: newPlanId,
-          previousPlan: currentPlan,
+          plan: newPlanId as $Enums.Plan,
+          previousPlan: currentPlan as $Enums.Plan,
           status: 'INACTIVE',
           cancelAtPeriodEnd: true,
           updatedAt: new Date()
@@ -200,8 +201,12 @@ export class SubscriptionService {
 
     try {
       // Update Stripe subscription
+      const stripeSubscriptionId = currentSubscription.stripeSubscriptionId as string;
+      if (!stripeSubscriptionId) {
+        throw new Error('Stripe subscription ID not found');
+      }
       await stripeService.updateSubscription(
-        currentSubscription.stripeSubscriptionId,
+        stripeSubscriptionId,
         newPlan.stripePriceId
       );
 
@@ -209,8 +214,8 @@ export class SubscriptionService {
       await prisma.subscriptions.update({
         where: { id: currentSubscription.id },
         data: {
-          plan: newPlanId,
-          previousPlan: currentSubscription.plan,
+          plan: newPlanId as $Enums.Plan,
+          previousPlan: currentSubscription.plan as $Enums.Plan,
           stripePriceId: newPlan.stripePriceId,
           updatedAt: new Date()
         }
@@ -219,7 +224,7 @@ export class SubscriptionService {
       // Update tenant plan
       await prisma.tenants.update({
         where: { id: tenantId },
-        data: { plan: newPlanId }
+        data: { plan: newPlanId as $Enums.Plan }
       });
 
       // Record billing history
@@ -228,7 +233,7 @@ export class SubscriptionService {
       return {
         success: true,
         message: 'Plan changed successfully',
-        subscriptionId: currentSubscription.stripeSubscriptionId,
+        subscriptionId: stripeSubscriptionId,
         previousPlan: currentSubscription.plan,
         newPlan: newPlanId,
         effectiveDate: new Date()

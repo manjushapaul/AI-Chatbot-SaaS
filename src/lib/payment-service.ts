@@ -54,12 +54,33 @@ export class PaymentService {
   async getPaymentMethods(customerId: string): Promise<PaymentMethod[]> {
     try {
       const paymentMethods = await stripeService.getCustomerPaymentMethods(customerId);
-      return paymentMethods.map(pm => ({
-        id: pm.id,
-        type: pm.type,
-        card: pm.card,
-        billingDetails: pm.billingDetails
-      }));
+      return paymentMethods.map(pm => {
+        const cardObj = pm.card as Record<string, unknown> | null | undefined;
+        let card: PaymentMethod['card'] = undefined;
+        
+        if (cardObj && typeof cardObj === 'object') {
+          const brand = cardObj.brand;
+          const last4 = cardObj.last4;
+          const expMonth = cardObj.expMonth;
+          const expYear = cardObj.expYear;
+          
+          if (typeof brand === 'string' && typeof last4 === 'string') {
+            card = {
+              brand,
+              last4,
+              expMonth: typeof expMonth === 'number' ? expMonth : 0,
+              expYear: typeof expYear === 'number' ? expYear : 0,
+            };
+          }
+        }
+        
+        return {
+          id: pm.id,
+          type: pm.type,
+          card,
+          billingDetails: pm.billingDetails as PaymentMethod['billingDetails']
+        };
+      });
     } catch (error) {
       console.error('Error getting payment methods:', error);
       throw new Error('Failed to get payment methods');
@@ -110,23 +131,23 @@ export class PaymentService {
       const invoices = await stripeService.getCustomerInvoices(customerId, limit);
       
       // Enhance with local billing history data
-      const localInvoices = await prisma.billingHistory.findMany({
+      const localInvoices = await prisma.billing_history.findMany({
         where: { tenantId: customerId },
         orderBy: { createdAt: 'desc' },
         take: limit
       });
 
       // Combine Stripe invoices with local billing history
-      const allInvoices = [...invoices, ...localInvoices.map((local: { id: string; amount: number; [key: string]: unknown }) => ({
+      const allInvoices = [...invoices, ...localInvoices.map((local) => ({
         id: local.id,
-        number: local.invoiceNumber,
+        number: local.invoiceNumber || '',
         amount: local.amount,
-        currency: local.currency,
-        status: local.status.toLowerCase(),
-        dueDate: local.billingPeriodEnd,
+        currency: local.currency || 'usd',
+        status: typeof local.status === 'string' ? local.status.toLowerCase() : String(local.status || 'unknown').toLowerCase(),
+        dueDate: local.billingPeriodEnd || new Date(),
         paid: local.status === 'PAID',
-        description: local.description,
-        metadata: local.metadata
+        description: local.description || undefined,
+        metadata: (local.metadata as Record<string, unknown>) || undefined
       }))];
 
       // Sort by date and return
@@ -159,7 +180,7 @@ export class PaymentService {
         };
       } catch (stripeError) {
         // If not found in Stripe, check local billing history
-        const localInvoice = await prisma.billingHistory.findUnique({
+        const localInvoice = await prisma.billing_history.findUnique({
           where: { id: invoiceId }
         });
 
@@ -169,11 +190,11 @@ export class PaymentService {
             number: localInvoice.invoiceNumber,
             amount: localInvoice.amount,
             currency: localInvoice.currency,
-            status: localInvoice.status.toLowerCase(),
+            status: String(localInvoice.status).toLowerCase(),
             dueDate: localInvoice.billingPeriodEnd,
             paid: localInvoice.status === 'PAID',
-            description: localInvoice.description,
-            metadata: localInvoice.metadata
+            description: localInvoice.description || undefined,
+            metadata: (localInvoice.metadata as Record<string, unknown>) || undefined
           };
         }
       }
@@ -227,15 +248,18 @@ export class PaymentService {
       
       // Record refund in local billing history
       if (amount) {
-        await prisma.billingHistory.create({
+        const refundId = crypto.randomUUID().replace(/-/g, '');
+        const now = new Date();
+        await prisma.billing_history.create({
           data: {
+            id: refundId,
             tenantId: 'system', // This should be the actual tenant ID
             invoiceNumber: `REFUND_${Date.now()}`,
             amount: -amount, // Negative amount for refunds
             currency: 'USD',
             status: 'REFUNDED',
-            billingPeriodStart: new Date(),
-            billingPeriodEnd: new Date(),
+            billingPeriodStart: now,
+            billingPeriodEnd: now,
             plan: 'FREE',
             description: `Refund for payment ${paymentIntentId}${reason ? ` - ${reason}` : ''}`,
             metadata: {
@@ -243,7 +267,9 @@ export class PaymentService {
               reason,
               refundAmount: amount,
               refundDate: new Date().toISOString()
-            }
+            },
+            createdAt: now,
+            updatedAt: now
           }
         });
       }
@@ -258,19 +284,19 @@ export class PaymentService {
    */
   async getPaymentHistory(customerId: string, limit: number = 20): Promise<PaymentHistory[]> {
     try {
-      const billingHistory = await prisma.billingHistory.findMany({
+      const billingHistory = await prisma.billing_history.findMany({
         where: { tenantId: customerId },
         orderBy: { createdAt: 'desc' },
         take: limit
       });
 
-      return billingHistory.map((record: { id: string; amount: number; [key: string]: unknown }) => ({
+      return billingHistory.map((record) => ({
         id: record.id,
         amount: record.amount,
         currency: record.currency,
-        status: record.status,
+        status: String(record.status),
         date: record.createdAt,
-        description: record.description,
+        description: record.description || undefined,
         invoiceId: record.id
       }));
     } catch (error) {

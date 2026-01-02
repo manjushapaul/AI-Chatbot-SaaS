@@ -1,12 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 import { typography } from '@/lib/design-tokens';
 
-export default function AuthErrorPage(): React.JSX.Element {
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
+function AuthErrorContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const error: string | null = searchParams.get('error');
 
@@ -59,6 +62,18 @@ export default function AuthErrorPage(): React.JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage(): React.JSX.Element {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   );
 }
 

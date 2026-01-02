@@ -19,15 +19,20 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/') ||  // Skip all API routes from middleware processing
     pathname.startsWith('/static') ||
     pathname.includes('.')
   ) {
-    // Continue with tenant extraction for these routes
+    // For API routes, skip tenant extraction to avoid errors
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.next();
+    }
+    // Continue with tenant extraction for other routes
     return await handleTenantExtraction(request, host);
   }
 
   // Check if path is public (always accessible)
-  const isPublic = PUBLIC_PATHS.some((path) =>
+  const _isPublic = PUBLIC_PATHS.some((path) =>
     pathname === path || pathname.startsWith(path + '/')
   );
 
@@ -156,12 +161,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api/auth (NextAuth API routes)
+     * - api/ (all API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - files with extensions (static assets)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|.*\\..*).*)',
+    '/((?!api/|_next/static|_next/image|favicon\\.ico|.*\\..*).*)',
   ],
 }; 

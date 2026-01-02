@@ -12,7 +12,7 @@ interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  customDomain?: string;
+  customDomain?: string | null;
   plan: string;
   status: Status;
   createdAt: Date;
@@ -93,7 +93,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
         tenant: { label: 'Tenant', type: 'text' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password || !credentials?.tenant) {
           return null;
         }
@@ -184,7 +184,16 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             tenantId: user.tenantId,
-            tenant: user.tenants
+            tenant: {
+              id: user.tenants.id,
+              name: user.tenants.name,
+              subdomain: user.tenants.subdomain,
+              customDomain: user.tenants.customDomain ?? undefined,
+              plan: user.tenants.plan,
+              status: user.tenants.status,
+              createdAt: user.tenants.createdAt,
+              updatedAt: user.tenants.updatedAt,
+            }
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -253,7 +262,10 @@ export const authOptions: NextAuthOptions = {
             if (dbUser) {
               token.role = dbUser.role;
               token.tenantId = dbUser.tenantId;
-              token.tenant = dbUser.tenants;
+              token.tenant = {
+                ...dbUser.tenants,
+                customDomain: dbUser.tenants.customDomain ?? undefined
+              };
               token.email = dbUser.email;
               token.name = dbUser.name;
             }
