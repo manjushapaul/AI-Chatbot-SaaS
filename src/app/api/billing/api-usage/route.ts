@@ -4,6 +4,10 @@ import { authOptions } from '../../../../lib/auth';
 import { apiUsageService } from '@/lib/api-usage-service';
 import { getTenantContext } from '../../../../lib/tenant';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Get session to verify authentication
