@@ -6,6 +6,7 @@ import { Square, Code, Copy, Eye, Settings, Trash2, Plus, Globe, Smartphone, Mon
 import { AppPage } from '@/components/dashboard/AppPage';
 import { ToolbarCard } from '@/components/dashboard/ToolbarCard';
 import { SectionCard } from '@/components/dashboard/SectionCard';
+import { PopupChatWidget } from '@/components/widgets/PopupChatWidget';
 import { typography, spacing, cardBase, cardPadding } from '@/lib/design-tokens';
 
 interface Widget {
@@ -58,6 +59,7 @@ export default function WidgetsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showChatWidget, setShowChatWidget] = useState(false);
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState('');
@@ -138,6 +140,7 @@ export default function WidgetsPage() {
   const handleTestWidget = (widget: Widget) => {
     setSelectedWidget(widget);
     setShowPreview(true);
+    setShowChatWidget(true);
   };
 
   const activeWidgets = widgets.filter(w => w.status === 'ACTIVE').length;
@@ -146,6 +149,19 @@ export default function WidgetsPage() {
 
   return (
     <AppPage>
+      {/* Popup Chat Widget - Show when Preview or Test is clicked */}
+      {showChatWidget && selectedWidget && (
+        <PopupChatWidget
+          title={selectedWidget.config.chatTitle || 'Chat with us'}
+          welcomeMessage={selectedWidget.config.welcomeMessage || 'Hello! How can I help you today?'}
+          primaryColor={selectedWidget.config.primaryColor || '#3B82F6'}
+          secondaryColor={selectedWidget.config.secondaryColor || '#1E40AF'}
+          theme={selectedWidget.config.theme === 'auto' ? 'light' : (selectedWidget.config.theme as 'light' | 'dark' | undefined)}
+          size={selectedWidget.config.size as 'small' | 'medium' | 'large' | undefined}
+          showAvatar={selectedWidget.config.showAvatar || false}
+          botInitials="AI"
+        />
+      )}
       <div className={spacing.pageBlock}>
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -364,6 +380,7 @@ export default function WidgetsPage() {
                     onClick={() => {
                       setSelectedWidget(widget);
                       setShowPreview(true);
+                      setShowChatWidget(true);
                     }}
                     className="flex-1 bg-accent-soft text-white px-3 py-2 rounded-full hover:bg-accent-soft/80 transition-colors flex items-center justify-center space-x-2 text-sm font-medium min-w-[100px]"
                   >
