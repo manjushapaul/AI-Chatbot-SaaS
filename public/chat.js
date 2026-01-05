@@ -552,6 +552,13 @@
             botId: data.data.botId // Ensure botId is included
           };
           
+          console.log('[Chat Widget] Widget config loaded:', { 
+            widgetId, 
+            botId: widgetConfig.botId ? widgetConfig.botId.substring(0, 8) + '...' : 'none',
+            position: widgetConfig.position,
+            primaryColor: widgetConfig.primaryColor
+          });
+          
           // Add styles
           addStyles();
           
@@ -559,11 +566,15 @@
           const button = createFloatingButton();
           if (document && document.body) {
             document.body.appendChild(button);
+            console.log('[Chat Widget] Floating button created and added to page');
           } else {
             // Wait for body to be available
             setTimeout(() => {
               if (document && document.body) {
                 document.body.appendChild(button);
+                console.log('[Chat Widget] Floating button created and added to page (delayed)');
+              } else {
+                console.error('[Chat Widget] Cannot create button - document.body not available');
               }
             }, 100);
           }
@@ -579,7 +590,8 @@
         }
       })
       .catch(error => {
-        console.error('Failed to load widget configuration:', error);
+        console.error('[Chat Widget] Failed to load widget configuration:', error);
+        console.warn('[Chat Widget] Using default configuration. Widget will appear but may not function without botId.');
         
         // Fallback to default config (no botId available)
         widgetConfig = { ...defaultConfig };
@@ -588,11 +600,15 @@
         const button = createFloatingButton();
         if (document && document.body) {
           document.body.appendChild(button);
+          console.log('[Chat Widget] Floating button created with default config');
         } else {
           // Wait for body to be available
           setTimeout(() => {
             if (document && document.body) {
               document.body.appendChild(button);
+              console.log('[Chat Widget] Floating button created with default config (delayed)');
+            } else {
+              console.error('[Chat Widget] Cannot create button - document.body not available');
             }
           }, 100);
         }

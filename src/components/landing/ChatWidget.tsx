@@ -7,24 +7,54 @@ const ChatWidget = () => {
     // Only load the script if we're on the client side
     if (typeof window === 'undefined') return;
 
-    // Check if script is already loaded
-    const existingScript = document.querySelector('script[src*="chat.js"]');
-    if (existingScript) {
-      return; // Script already loaded, don't add again
-    }
+    const loadChatWidget = () => {
+      // Check if script is already loaded
+      const existingScript = document.querySelector('script[src*="chat.js"][data-widget-id="de7ee0f5a456420eae69658896eb4f79"]');
+      if (existingScript) {
+        console.log('[ChatWidget] Script already loaded');
+        return; // Script already loaded, don't add again
+      }
 
-    const script = document.createElement('script');
-    // Use the current origin to support both localhost and production
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    script.src = `${baseUrl}/chat.js`;
-    script.setAttribute('data-widget-id', 'de7ee0f5a456420eae69658896eb4f79');
-    script.async = true;
-    document.body.appendChild(script);
+      // Check if body is available
+      if (!document.body) {
+        console.log('[ChatWidget] Body not ready, retrying...');
+        setTimeout(loadChatWidget, 100);
+        return;
+      }
+
+      console.log('[ChatWidget] Loading chat widget script...');
+      const script = document.createElement('script');
+      // Use the current origin to support both localhost and production
+      const baseUrl = window.location.origin;
+      script.src = `${baseUrl}/chat.js`;
+      script.setAttribute('data-widget-id', 'de7ee0f5a456420eae69658896eb4f79');
+      script.async = true;
+      
+      // Add error handling
+      script.onerror = (error) => {
+        console.error('[ChatWidget] Failed to load chat.js:', error);
+      };
+      
+      script.onload = () => {
+        console.log('[ChatWidget] chat.js loaded successfully');
+      };
+
+      document.body.appendChild(script);
+    };
+
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadChatWidget);
+    } else {
+      // DOM is already ready
+      loadChatWidget();
+    }
 
     return () => {
       // Cleanup: remove script when component unmounts
       const scriptToRemove = document.querySelector('script[src*="chat.js"][data-widget-id="de7ee0f5a456420eae69658896eb4f79"]');
       if (scriptToRemove && scriptToRemove.parentNode) {
+        console.log('[ChatWidget] Removing chat widget script');
         scriptToRemove.parentNode.removeChild(scriptToRemove);
       }
     };
