@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
       avgWaitTime: parseFloat(avgWaitTime),
       systemHealth: systemHealth,
       lastUpdated: new Date().toISOString(),
-      botActivity: recentBotActivity.map(bot => ({
+      botActivity: recentBotActivity.map((bot: { name: string; _count: { conversations: number } }) => ({
         name: bot.name,
         recentConversations: bot._count.conversations
       }))
