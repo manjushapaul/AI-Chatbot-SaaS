@@ -257,11 +257,11 @@ export default function EditWidgetPage() {
                 
                 <div>
                   <label htmlFor="position" className={`${typography.labelLarge} block mb-1`}>
-                    Position
+                    Chat Bubble Position
                   </label>
                   <select
                     id="position"
-                    value={widget.config.position}
+                    value={widget.config.position || 'bottom-right'}
                     onChange={(e) => updateConfig('position', e.target.value)}
                     className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm text-gray-800 focus:border-accent-soft focus:ring-2 focus:ring-accent-soft/40 focus:outline-none"
                   >
@@ -272,6 +272,7 @@ export default function EditWidgetPage() {
                     <option value="center">Center</option>
                     <option value="inline">Inline</option>
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">Choose where the chat bubble appears on the page</p>
                 </div>
                 
                 <div>

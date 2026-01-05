@@ -255,7 +255,7 @@ export default function CreateWidgetPage() {
                   
                   <div>
                     <label htmlFor="position" className={`${typography.labelLarge} block mb-1`}>
-                      Position
+                      Chat Bubble Position
                     </label>
                     <select
                       id="position"
@@ -270,6 +270,7 @@ export default function CreateWidgetPage() {
                       <option value="center">Center</option>
                       <option value="inline">Inline</option>
                     </select>
+                    <p className="mt-1 text-xs text-gray-500">Choose where the chat bubble appears on the page</p>
                   </div>
                   
                   <div>
