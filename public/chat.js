@@ -441,19 +441,29 @@
     const inputArea = widgetElement.querySelector('.ai-chatbot-input-area');
     const branding = widgetElement.querySelector('.ai-chatbot-branding');
     
-    if (!chatArea || !inputArea) return;
+    if (!chatArea || !inputArea) {
+      console.error('[Chat Widget] Chat area or input area not found');
+      return;
+    }
+    
+    // Check if currently minimized using data attribute (more reliable)
+    const isMinimized = widgetElement.getAttribute('data-minimized') === 'true';
     
     // Toggle visibility of chat content (not the widget itself)
-    if (chatArea.style.display === 'none') {
+    if (isMinimized) {
       // Restore: show chat content
       chatArea.style.display = 'flex';
       inputArea.style.display = 'flex';
       if (branding) branding.style.display = 'block';
+      widgetElement.setAttribute('data-minimized', 'false');
+      console.log('[Chat Widget] Restored chat area and input area');
     } else {
       // Minimize: hide chat content but keep widget header visible
       chatArea.style.display = 'none';
       inputArea.style.display = 'none';
       if (branding) branding.style.display = 'none';
+      widgetElement.setAttribute('data-minimized', 'true');
+      console.log('[Chat Widget] Minimized chat area and input area');
     }
   }
 
