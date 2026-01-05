@@ -37,6 +37,7 @@ export function PopupChatWidget({
   const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const initializedRef = useRef(false);
 
   // Ensure component only renders on client
   useEffect(() => {
@@ -45,33 +46,37 @@ export function PopupChatWidget({
 
   // Initialize with welcome message
   useEffect(() => {
-    if (messages.length === 0 && welcomeMessage) {
+    if (!isMounted) return;
+    
+    if (!initializedRef.current && welcomeMessage) {
       setMessages([
         {
           id: '1',
-          content: welcomeMessage || 'Hello! How can I help you today?',
+          content: welcomeMessage,
           role: 'assistant',
           timestamp: new Date(),
         },
       ]);
+      initializedRef.current = true;
     }
-  }, [welcomeMessage, messages.length]);
+  }, [isMounted, welcomeMessage]);
 
-  // Update welcome message when it changes (if it's the first message)
+  // Update welcome message when it changes (only if already initialized)
   useEffect(() => {
-    if (messages.length > 0 && messages[0]?.role === 'assistant' && welcomeMessage) {
-      setMessages(prev => {
+    if (!isMounted || !initializedRef.current) return;
+    
+    setMessages(prev => {
+      if (prev.length > 0 && prev[0]?.role === 'assistant' && prev[0].content !== welcomeMessage) {
         const newMessages = [...prev];
-        if (newMessages[0] && newMessages[0].role === 'assistant' && newMessages[0].content !== welcomeMessage) {
-          newMessages[0] = {
-            ...newMessages[0],
-            content: welcomeMessage,
-          };
-        }
+        newMessages[0] = {
+          ...newMessages[0],
+          content: welcomeMessage || 'Hello! How can I help you today?',
+        };
         return newMessages;
-      });
-    }
-  }, [welcomeMessage, messages]);
+      }
+      return prev;
+    });
+  }, [welcomeMessage, isMounted]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
