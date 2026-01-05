@@ -468,28 +468,78 @@
     // Toggle visibility of chat content (not the widget itself)
     if (isMinimized) {
       // Restore: show chat content
+      // Ensure flex properties are maintained
       chatArea.style.display = 'flex';
+      chatArea.style.flexDirection = 'column';
       chatArea.style.visibility = 'visible';
+      chatArea.style.opacity = '1';
+      chatArea.style.height = 'auto';
+      
       inputArea.style.display = 'flex';
       inputArea.style.visibility = 'visible';
+      inputArea.style.opacity = '1';
+      
       if (branding) {
         branding.style.display = 'block';
         branding.style.visibility = 'visible';
+        branding.style.opacity = '1';
       }
+      
       widgetElement.setAttribute('data-minimized', 'false');
-      console.log('[Chat Widget] ✅ Restored chat area and input area');
+      
+      // Verify content is still there
+      const hasContent = chatArea.children.length > 0;
+      console.log('[Chat Widget] ✅ Restored chat area and input area', { 
+        hasContent, 
+        childrenCount: chatArea.children.length,
+        chatAreaHTML: chatArea.innerHTML.substring(0, 100) 
+      });
+      
+      // If content is missing, restore welcome message
+      if (!hasContent && widgetConfig.welcomeMessage) {
+        console.warn('[Chat Widget] Content missing, restoring welcome message');
+        const welcomeMsg = createElement('div', 'ai-chatbot-message ai-chatbot-welcome');
+        welcomeMsg.style.cssText = `
+          align-self: flex-start;
+          max-width: 80%;
+          padding: 12px;
+          border-radius: 12px;
+          background-color: ${widgetConfig.secondaryColor};
+          color: white;
+          font-size: 14px;
+          line-height: 1.4;
+        `;
+        welcomeMsg.textContent = widgetConfig.welcomeMessage;
+        chatArea.appendChild(welcomeMsg);
+      }
     } else {
       // Minimize: hide chat content but keep widget header visible
-      chatArea.style.display = 'none';
+      // Use opacity and height instead of display:none to preserve content
+      chatArea.style.display = 'flex';
+      chatArea.style.flexDirection = 'column';
       chatArea.style.visibility = 'hidden';
-      inputArea.style.display = 'none';
+      chatArea.style.opacity = '0';
+      chatArea.style.height = '0';
+      chatArea.style.overflow = 'hidden';
+      
+      inputArea.style.display = 'flex';
       inputArea.style.visibility = 'hidden';
+      inputArea.style.opacity = '0';
+      inputArea.style.height = '0';
+      inputArea.style.overflow = 'hidden';
+      
       if (branding) {
-        branding.style.display = 'none';
+        branding.style.display = 'block';
         branding.style.visibility = 'hidden';
+        branding.style.opacity = '0';
+        branding.style.height = '0';
+        branding.style.overflow = 'hidden';
       }
+      
       widgetElement.setAttribute('data-minimized', 'true');
-      console.log('[Chat Widget] ⬇️ Minimized chat area and input area');
+      console.log('[Chat Widget] ⬇️ Minimized chat area and input area', {
+        childrenCount: chatArea.children.length
+      });
     }
   }
 
