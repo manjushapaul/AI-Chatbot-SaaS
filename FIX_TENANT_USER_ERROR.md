@@ -191,3 +191,4 @@ If you've tried everything:
 **🎯 The most common fix is resetting the database password and using a simple password without special characters.**
 
 
+

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       systemStatus
     ] = await Promise.all([
       // Current active users (users with activity in last 5 minutes)
-      prisma.users.count({
+      (prisma as any).users.count({
         where: {
           tenantId,
           updatedAt: {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Currently active conversations
-      prisma.conversations.count({
+      (prisma as any).conversations.count({
         where: {
           tenantId,
           status: 'ACTIVE'
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Total conversations today
-      prisma.conversations.count({
+      (prisma as any).conversations.count({
         where: {
           tenantId,
           startedAt: {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Total messages today
-      prisma.messages.count({
+      (prisma as any).messages.count({
         where: {
           conversations: {
             tenantId,
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Average response time (last 24 hours)
-      prisma.messages.aggregate({
+      (prisma as any).messages.aggregate({
         where: {
           conversations: {
             tenantId,
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // System health check (uptime, errors, etc.)
-      prisma.conversations.aggregate({
+      (prisma as any).conversations.aggregate({
         where: {
           tenantId,
           startedAt: {
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     const avgWaitTime = avgResponseTimeMs > 0 ? (avgResponseTimeMs / 1000).toFixed(1) : '0.0';
 
     // Get recent bot activity
-    const recentBotActivity = await prisma.bots.findMany({
+    const recentBotActivity = await (prisma as any).bots.findMany({
       where: { tenantId },
       select: {
         id: true,

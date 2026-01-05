@@ -51,3 +51,4 @@ console.log('   1. Restart your dev server (npm run dev)');
 console.log('   2. Try signing in again');
 console.log('\n🔗 New connection string starts with:', newDatabaseUrl.substring(0, 60) + '...');
 
+

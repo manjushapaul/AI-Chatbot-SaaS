@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Chatbot SaaS Platform",
   description: "Multi-tenant AI chatbot platform for businesses",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

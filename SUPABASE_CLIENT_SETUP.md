@@ -240,3 +240,4 @@ const { error } = await supabase
 - [Next.js with Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/nextjs)
 
 
+

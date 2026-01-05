@@ -148,3 +148,4 @@ But pooled is usually better for Vercel!
 **🎯 The fix is to use the pooled connection string (port 6543) instead of direct (port 5432).**
 
 
+

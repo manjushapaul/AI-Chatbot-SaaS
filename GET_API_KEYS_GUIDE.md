@@ -194,3 +194,4 @@ PINECONE_INDEX_NAME=ai-chatbot-embeddings
 4. ✅ Verify embeddings are being stored in Pinecone
 
 
+

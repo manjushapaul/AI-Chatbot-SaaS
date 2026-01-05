@@ -140,3 +140,4 @@ If `prisma generate` works, then the connection is fine for client generation. M
 **The key is: Prisma Client generation works with pooled connections, but migrations might need direct connections or manual SQL execution.**
 
 
+

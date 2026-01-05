@@ -139,3 +139,4 @@ The error "Database connection failed" means:
 - ✅ Upload documents
 - ✅ Use all features that require database access
 
+

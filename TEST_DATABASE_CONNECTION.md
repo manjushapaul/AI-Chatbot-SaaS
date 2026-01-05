@@ -125,3 +125,4 @@ If your password has special characters, you MUST URL-encode them:
 
 **The password `iuTU7naRkgmJyBAm` is incorrect. You need to reset it in Supabase and update `.env.local` with the new password.**
 
+

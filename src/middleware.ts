@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if path is public (always accessible)
-  const _isPublic = PUBLIC_PATHS.some((path) =>
+  const isPublic = PUBLIC_PATHS.some((path) =>
     pathname === path || pathname.startsWith(path + '/')
   );
 
@@ -55,10 +55,14 @@ export async function middleware(request: NextRequest) {
       signInUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(signInUrl);
     }
-
   }
 
-  // Continue with tenant extraction for authenticated or public routes
+  // For public paths on localhost, skip tenant extraction to avoid errors
+  if (isPublic && (host.includes('localhost') || host.includes('127.0.0.1'))) {
+    return NextResponse.next();
+  }
+
+  // Continue with tenant extraction for authenticated or non-public routes
   return await handleTenantExtraction(request, host);
 }
 

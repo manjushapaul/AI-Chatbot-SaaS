@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Eye, Palette, MessageSquare, Globe, Monitor, Loader2 }
 import { AppPage } from '@/components/dashboard/AppPage';
 import { FormCard } from '@/components/dashboard/FormCard';
 import { ChatWidgetPreview } from '@/components/dashboard/ChatWidgetPreview';
+import { PopupChatWidget } from '@/components/widgets/PopupChatWidget';
 import { typography, spacing, cardBase, cardPadding } from '@/lib/design-tokens';
 
 interface Widget {
@@ -155,6 +156,19 @@ export default function EditWidgetPage() {
 
   return (
     <AppPage>
+      {/* Popup Chat Widget - Always visible when widget is loaded */}
+      {widget && (
+        <PopupChatWidget
+          title={widget.config.chatTitle || 'Chat with us'}
+          welcomeMessage={widget.config.welcomeMessage || 'Hello! How can I help you today?'}
+          primaryColor={widget.config.primaryColor || '#121212'}
+          secondaryColor={widget.config.secondaryColor || '#ffffff'}
+          theme={widget.config.theme as 'light' | 'dark' | undefined}
+          size={widget.config.size as 'small' | 'medium' | 'large' | undefined}
+          showAvatar={widget.config.showAvatar || false}
+          botInitials="AI"
+        />
+      )}
       <div className={spacing.pageBlock}>
         {/* Header */}
         <div className="flex items-center justify-between">
