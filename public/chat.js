@@ -395,6 +395,9 @@
     widget.appendChild(chatArea);
     widget.appendChild(inputArea);
 
+    // Initialize minimized state
+    widget.setAttribute('data-minimized', 'false');
+
     // Add event listeners
     input.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
@@ -435,35 +438,58 @@
       e.stopPropagation();
     }
     
-    if (!widgetElement) return;
+    if (!widgetElement) {
+      console.error('[Chat Widget] Widget element not found');
+      return;
+    }
     
     const chatArea = widgetElement.querySelector('.ai-chatbot-chat-area');
     const inputArea = widgetElement.querySelector('.ai-chatbot-input-area');
     const branding = widgetElement.querySelector('.ai-chatbot-branding');
     
     if (!chatArea || !inputArea) {
-      console.error('[Chat Widget] Chat area or input area not found');
+      console.error('[Chat Widget] Chat area or input area not found', { chatArea: !!chatArea, inputArea: !!inputArea });
       return;
     }
     
-    // Check if currently minimized using data attribute (more reliable)
-    const isMinimized = widgetElement.getAttribute('data-minimized') === 'true';
+    // Check if currently minimized - check both data attribute and actual display style
+    const dataMinimized = widgetElement.getAttribute('data-minimized');
+    const actualDisplay = window.getComputedStyle(chatArea).display;
+    const isMinimized = dataMinimized === 'true' || actualDisplay === 'none';
+    
+    console.log('[Chat Widget] Toggle minimize', { 
+      dataMinimized, 
+      actualDisplay, 
+      isMinimized,
+      chatAreaDisplay: chatArea.style.display,
+      inputAreaDisplay: inputArea.style.display
+    });
     
     // Toggle visibility of chat content (not the widget itself)
     if (isMinimized) {
       // Restore: show chat content
       chatArea.style.display = 'flex';
+      chatArea.style.visibility = 'visible';
       inputArea.style.display = 'flex';
-      if (branding) branding.style.display = 'block';
+      inputArea.style.visibility = 'visible';
+      if (branding) {
+        branding.style.display = 'block';
+        branding.style.visibility = 'visible';
+      }
       widgetElement.setAttribute('data-minimized', 'false');
-      console.log('[Chat Widget] Restored chat area and input area');
+      console.log('[Chat Widget] ✅ Restored chat area and input area');
     } else {
       // Minimize: hide chat content but keep widget header visible
       chatArea.style.display = 'none';
+      chatArea.style.visibility = 'hidden';
       inputArea.style.display = 'none';
-      if (branding) branding.style.display = 'none';
+      inputArea.style.visibility = 'hidden';
+      if (branding) {
+        branding.style.display = 'none';
+        branding.style.visibility = 'hidden';
+      }
       widgetElement.setAttribute('data-minimized', 'true');
-      console.log('[Chat Widget] Minimized chat area and input area');
+      console.log('[Chat Widget] ⬇️ Minimized chat area and input area');
     }
   }
 
