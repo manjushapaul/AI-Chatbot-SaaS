@@ -9,7 +9,7 @@ const ChatWidget = () => {
 
     const loadChatWidget = () => {
       // Check if script is already loaded
-      const existingScript = document.querySelector('script[src*="chat.js"][data-widget-id="de7ee0f5a456420eae69658896eb4f79"]');
+      const existingScript = document.querySelector('script[src*="chat.js"][data-widget-id="531ce35f391b43249c279d506b4efdb0"]');
       if (existingScript) {
         console.log('[ChatWidget] Script already loaded');
         return; // Script already loaded, don't add again
@@ -24,10 +24,9 @@ const ChatWidget = () => {
 
       console.log('[ChatWidget] Loading chat widget script...');
       const script = document.createElement('script');
-      // Use the current origin to support both localhost and production
-      const baseUrl = window.location.origin;
-      script.src = `${baseUrl}/chat.js`;
-      script.setAttribute('data-widget-id', 'de7ee0f5a456420eae69658896eb4f79');
+      // Use the production URL for the chat widget
+      script.src = 'https://ai-chatbot-saas-vert.vercel.app/chat.js';
+      script.setAttribute('data-widget-id', '531ce35f391b43249c279d506b4efdb0');
       script.async = true;
       
       // Add error handling
@@ -52,7 +51,7 @@ const ChatWidget = () => {
 
     return () => {
       // Cleanup: remove script when component unmounts
-      const scriptToRemove = document.querySelector('script[src*="chat.js"][data-widget-id="de7ee0f5a456420eae69658896eb4f79"]');
+      const scriptToRemove = document.querySelector('script[src*="chat.js"][data-widget-id="531ce35f391b43249c279d506b4efdb0"]');
       if (scriptToRemove && scriptToRemove.parentNode) {
         console.log('[ChatWidget] Removing chat widget script');
         scriptToRemove.parentNode.removeChild(scriptToRemove);
