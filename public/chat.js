@@ -240,7 +240,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-radius: 12px 12px 0 0;
+      border-radius: 0 0 0 0;
       flex-shrink: 0;
       visibility: visible;
       opacity: 1;
