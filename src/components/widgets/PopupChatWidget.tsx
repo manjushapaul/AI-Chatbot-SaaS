@@ -57,6 +57,22 @@ export function PopupChatWidget({
     }
   }, [welcomeMessage, messages.length]);
 
+  // Update welcome message when it changes (if it's the first message)
+  useEffect(() => {
+    if (messages.length > 0 && messages[0]?.role === 'assistant' && welcomeMessage) {
+      setMessages(prev => {
+        const newMessages = [...prev];
+        if (newMessages[0] && newMessages[0].role === 'assistant' && newMessages[0].content !== welcomeMessage) {
+          newMessages[0] = {
+            ...newMessages[0],
+            content: welcomeMessage,
+          };
+        }
+        return newMessages;
+      });
+    }
+  }, [welcomeMessage, messages]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

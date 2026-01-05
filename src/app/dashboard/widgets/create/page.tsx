@@ -6,6 +6,7 @@ import { ArrowLeft, Bot, Palette, Monitor, Settings, Eye } from 'lucide-react';
 import { AppPage } from '@/components/dashboard/AppPage';
 import { FormCard } from '@/components/dashboard/FormCard';
 import { ChatWidgetPreview } from '@/components/dashboard/ChatWidgetPreview';
+import { PopupChatWidget } from '@/components/widgets/PopupChatWidget';
 import { typography, spacing, cardBase, cardPadding } from '@/lib/design-tokens';
 
 interface Bot {
@@ -139,6 +140,17 @@ export default function CreateWidgetPage() {
 
   return (
     <AppPage>
+      {/* Popup Chat Widget - Always visible for live preview */}
+      <PopupChatWidget
+        title={formData.config.chatTitle || 'Chat with us'}
+        welcomeMessage={formData.config.welcomeMessage || 'Hello! How can I help you today?'}
+        primaryColor={formData.config.primaryColor || '#3B82F6'}
+        secondaryColor={formData.config.secondaryColor || '#1E40AF'}
+        theme={formData.config.theme === 'auto' ? 'light' : (formData.config.theme as 'light' | 'dark' | undefined)}
+        size={formData.config.size as 'small' | 'medium' | 'large' | undefined}
+        showAvatar={formData.config.showAvatar || false}
+        botInitials="AI"
+      />
       <div className={spacing.pageBlock}>
         {/* Header */}
         <div className="flex items-center space-x-4">
