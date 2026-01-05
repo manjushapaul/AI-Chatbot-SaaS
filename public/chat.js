@@ -222,7 +222,7 @@
       ${sizeStyle}
       background-color: ${getTheme() === 'dark' ? '#1F2937' : '#FFFFFF'};
       color: ${getTheme() === 'dark' ? '#FFFFFF' : '#000000'};
-      border-radius: 12px;
+      border-radius: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
