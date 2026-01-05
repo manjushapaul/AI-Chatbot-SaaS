@@ -129,3 +129,4 @@ Once the password is reset and connection string is updated:
 **The fix is to reset your Supabase database password and update the connection string with the new password.**
 
 
+

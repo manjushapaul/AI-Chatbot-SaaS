@@ -429,8 +429,13 @@
     // Scroll to bottom
     chatArea.scrollTop = chatArea.scrollHeight;
 
+    // Get the base URL from the script source
+    const script = document.currentScript || document.querySelector('script[src*="chat.js"]');
+    const scriptSrc = script ? script.src : '';
+    const baseUrl = scriptSrc ? scriptSrc.substring(0, scriptSrc.lastIndexOf('/')) : '';
+    
     // Send message to chat API
-    fetch('/api/chat', {
+    fetch(`${baseUrl}/api/chat/public`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -502,11 +507,20 @@
     const widgetId = script.getAttribute('data-widget-id');
     if (!widgetId) return;
 
+    // Get the base URL from the script source
+    const scriptSrc = script ? script.src : '';
+    const baseUrl = scriptSrc ? scriptSrc.substring(0, scriptSrc.lastIndexOf('/')) : '';
+    
     // Load widget configuration from API
-    fetch(`/api/widgets/${widgetId}/config`)
-      .then(response => response.json())
+    fetch(`${baseUrl}/api/widgets/${widgetId}/config`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        if (data.success) {
+        if (data.success && data.data) {
           widgetConfig = { 
             ...defaultConfig, 
             ...data.data.config,
@@ -518,7 +532,9 @@
           
           // Create floating button
           const button = createFloatingButton();
-          document.body.appendChild(button);
+          if (document.body) {
+            document.body.appendChild(button);
+          }
           
           // Auto-open if configured
           if (widgetConfig.autoOpen) {
@@ -526,6 +542,8 @@
           }
           
           isInitialized = true;
+        } else {
+          throw new Error('Invalid response format');
         }
       })
       .catch(error => {
@@ -536,17 +554,34 @@
         addStyles();
         
         const button = createFloatingButton();
-        document.body.appendChild(button);
+        if (document.body) {
+          document.body.appendChild(button);
+        }
         
         isInitialized = true;
       });
   }
 
   // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
+  function safeInitialize() {
+    if (document && document.body) {
+      initialize();
+    } else {
+      // Wait for body to be available
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', safeInitialize);
+      } else {
+        // Use a small delay to ensure body exists
+        setTimeout(safeInitialize, 100);
+      }
+    }
+  }
+
+  // Start initialization
+  if (document && document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeInitialize);
   } else {
-    initialize();
+    safeInitialize();
   }
 
   // Expose widget API globally

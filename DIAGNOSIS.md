@@ -63,3 +63,4 @@ All routes (including simple test endpoints) are returning "Internal Server Erro
 The middleware is likely still processing API routes and crashing. The matcher pattern update should fix this, but you need to **restart the dev server** for the changes to take effect.
 
 
+

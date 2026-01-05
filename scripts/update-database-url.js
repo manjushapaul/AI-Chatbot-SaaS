@@ -52,3 +52,4 @@ console.log('   2. Try signing in again');
 console.log('\n🔗 New connection string starts with:', newDatabaseUrl.substring(0, 60) + '...');
 
 
+

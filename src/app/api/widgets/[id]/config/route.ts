@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createTenantDB } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -15,28 +15,36 @@ export async function GET(
       );
     }
 
-    // For public widget access, we need to get the tenant from the widget
-    // This is a simplified approach - in production you might want to use subdomain routing
-    const response = await fetch(`${request.nextUrl.origin}/api/widgets/${widgetId}/public`);
+    // Directly query the database to find the widget
+    // This works for public widgets across all tenants
+    const widget = await prisma.widgets.findFirst({
+      where: { 
+        id: widgetId,
+        status: 'ACTIVE' // Only return active widgets
+      },
+      include: {
+        bots: {
+          select: { id: true, name: true },
+        },
+      },
+    });
     
-    if (!response.ok) {
+    if (!widget) {
       return NextResponse.json(
         { error: 'Widget not found' },
         { status: 404 }
       );
     }
-
-    const widgetData = await response.json();
     
     // Return widget configuration with CORS headers for external embedding
     return NextResponse.json({
       success: true,
       data: {
-        id: widgetData.data.id,
-        name: widgetData.data.name,
-        type: widgetData.data.type,
-        config: widgetData.data.config,
-        botId: widgetData.data.botId
+        id: widget.id,
+        name: widget.name,
+        type: widget.type,
+        config: widget.config,
+        botId: widget.botId || widget.bots?.id || null
       }
     }, {
       headers: {

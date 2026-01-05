@@ -140,3 +140,4 @@ The error "Database connection failed" means:
 - ✅ Use all features that require database access
 
 
+
