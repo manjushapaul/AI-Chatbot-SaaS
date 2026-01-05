@@ -227,6 +227,8 @@
       flex-direction: column;
       overflow: hidden;
       z-index: 999999;
+      visibility: visible;
+      opacity: 1;
     `;
 
     // Header
@@ -239,6 +241,9 @@
       align-items: center;
       justify-content: space-between;
       border-radius: 12px 12px 0 0;
+      flex-shrink: 0;
+      visibility: visible;
+      opacity: 1;
     `;
 
     const headerLeft = createElement('div');
@@ -276,8 +281,11 @@
         <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
       </svg>
     `;
-    minimizeBtn.style.cssText = 'background: none; color: white; padding: 4px; border-radius: 4px;';
-    minimizeBtn.addEventListener('click', toggleMinimize);
+    minimizeBtn.style.cssText = 'background: none; color: white; padding: 4px; border-radius: 4px; cursor: pointer;';
+    minimizeBtn.setAttribute('type', 'button'); // Prevent form submission if inside a form
+    minimizeBtn.addEventListener('click', function(e) {
+      toggleMinimize(e);
+    });
     headerRight.appendChild(minimizeBtn);
 
     const closeBtn = createElement('button');
@@ -286,8 +294,13 @@
         <path d="M18 6L6 18M6 6l12 12"/>
       </svg>
     `;
-    closeBtn.style.cssText = 'background: none; color: white; padding: 4px; border-radius: 4px;';
-    closeBtn.addEventListener('click', toggleWidget);
+    closeBtn.style.cssText = 'background: none; color: white; padding: 4px; border-radius: 4px; cursor: pointer;';
+    closeBtn.setAttribute('type', 'button'); // Prevent form submission if inside a form
+    closeBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleWidget();
+    });
     headerRight.appendChild(closeBtn);
 
     header.appendChild(headerLeft);
@@ -415,21 +428,32 @@
     }
   }
 
-  function toggleMinimize() {
-    if (widgetElement) {
-      const chatArea = widgetElement.querySelector('.ai-chatbot-chat-area');
-      const inputArea = widgetElement.querySelector('.ai-chatbot-input-area');
-      const branding = widgetElement.querySelector('.ai-chatbot-branding');
-      
-      if (chatArea.style.display === 'none') {
-        chatArea.style.display = 'flex';
-        inputArea.style.display = 'flex';
-        if (branding) branding.style.display = 'block';
-      } else {
-        chatArea.style.display = 'none';
-        inputArea.style.display = 'none';
-        if (branding) branding.style.display = 'none';
-      }
+  function toggleMinimize(e) {
+    // Prevent event from bubbling up and affecting the page
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!widgetElement) return;
+    
+    const chatArea = widgetElement.querySelector('.ai-chatbot-chat-area');
+    const inputArea = widgetElement.querySelector('.ai-chatbot-input-area');
+    const branding = widgetElement.querySelector('.ai-chatbot-branding');
+    
+    if (!chatArea || !inputArea) return;
+    
+    // Toggle visibility of chat content (not the widget itself)
+    if (chatArea.style.display === 'none') {
+      // Restore: show chat content
+      chatArea.style.display = 'flex';
+      inputArea.style.display = 'flex';
+      if (branding) branding.style.display = 'block';
+    } else {
+      // Minimize: hide chat content but keep widget header visible
+      chatArea.style.display = 'none';
+      inputArea.style.display = 'none';
+      if (branding) branding.style.display = 'none';
     }
   }
 
