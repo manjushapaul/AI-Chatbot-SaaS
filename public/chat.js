@@ -275,19 +275,6 @@
     const headerRight = createElement('div');
     headerRight.style.cssText = 'display: flex; align-items: center; gap: 8px;';
 
-    const minimizeBtn = createElement('button');
-    minimizeBtn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
-      </svg>
-    `;
-    minimizeBtn.style.cssText = 'background: none; color: white; padding: 4px; border-radius: 4px; cursor: pointer;';
-    minimizeBtn.setAttribute('type', 'button'); // Prevent form submission if inside a form
-    minimizeBtn.addEventListener('click', function(e) {
-      toggleMinimize(e);
-    });
-    headerRight.appendChild(minimizeBtn);
-
     const closeBtn = createElement('button');
     closeBtn.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
