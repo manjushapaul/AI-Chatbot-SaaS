@@ -8,3 +8,4 @@ ADD COLUMN "isTrialExpired" BOOLEAN NOT NULL DEFAULT false;
 
 
 
+

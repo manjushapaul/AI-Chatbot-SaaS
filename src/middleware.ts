@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
       signInUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(signInUrl);
     }
-  }
+    }
 
   // For public paths on localhost, skip tenant extraction to avoid errors
   if (isPublic && (host.includes('localhost') || host.includes('127.0.0.1'))) {

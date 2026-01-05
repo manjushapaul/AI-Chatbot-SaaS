@@ -79,7 +79,7 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         z-index: 999999;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        border-radius: 12px;
+        border-radius:0 0 12px 12px;
         transition: all 0.3s ease;
       }
       
@@ -222,7 +222,7 @@
       ${sizeStyle}
       background-color: ${getTheme() === 'dark' ? '#1F2937' : '#FFFFFF'};
       color: ${getTheme() === 'dark' ? '#FFFFFF' : '#000000'};
-      border-radius: 0;
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
