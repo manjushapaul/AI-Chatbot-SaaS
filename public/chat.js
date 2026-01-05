@@ -21,21 +21,21 @@
     botId: null
   };
 
-  // Size classes mapping
-  const sizeClasses = {
-    small: 'w-80 h-96',
-    medium: 'w-96 h-[28rem]',
-    large: 'w-[28rem] h-[32rem]'
+  // Size styles mapping (CSS properties, not Tailwind classes)
+  const sizeStyles = {
+    small: 'width: 320px; height: 384px;',
+    medium: 'width: 384px; height: 448px;',
+    large: 'width: 448px; height: 512px;'
   };
 
-  // Position classes mapping
-  const positionClasses = {
-    'bottom-right': 'bottom-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
-    'top-right': 'top-4 right-4',
-    'top-left': 'top-4 left-4',
-    'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
-    'inline': 'relative'
+  // Position styles mapping (CSS properties, not Tailwind classes)
+  const positionStyles = {
+    'bottom-right': 'bottom: 16px; right: 16px;',
+    'bottom-left': 'bottom: 16px; left: 16px;',
+    'top-right': 'top: 16px; right: 16px;',
+    'top-left': 'top: 16px; left: 16px;',
+    'center': 'top: 50%; left: 50%; transform: translate(-50%, -50%);',
+    'inline': 'position: relative;'
   };
 
   // Utility functions
@@ -154,9 +154,12 @@
 
   function createFloatingButton() {
     const button = createElement('button', 'ai-chatbot-widget ai-chatbot-floating-button fade-in');
+    const position = widgetConfig.position || 'bottom-right';
+    const positionStyle = positionStyles[position] || positionStyles['bottom-right'];
+    
     button.style.cssText = `
       position: fixed;
-      ${positionClasses[widgetConfig.position]};
+      ${positionStyle}
       width: 64px;
       height: 64px;
       border-radius: 50%;
@@ -168,6 +171,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
       z-index: 999999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     `;
 
     const icon = createElement('div');
@@ -184,10 +188,21 @@
 
   function createWidget() {
     const widget = createElement('div', 'ai-chatbot-widget ai-chatbot-main fade-in');
+    const position = widgetConfig.position || 'bottom-right';
+    const positionStyle = positionStyles[position] || positionStyles['bottom-right'];
+    const size = widgetConfig.size || 'medium';
+    const sizeStyle = sizeStyles[size] || sizeStyles['medium'];
+    
+    // For the widget popup, adjust position to be above the button
+    let adjustedPosition = positionStyle;
+    if (position === 'bottom-right' || position === 'bottom-left') {
+      adjustedPosition = positionStyle.replace('bottom: 16px', 'bottom: 88px'); // 64px button + 16px gap + 8px
+    }
+    
     widget.style.cssText = `
       position: fixed;
-      ${positionClasses[widgetConfig.position]};
-      ${sizeClasses[widgetConfig.size]};
+      ${adjustedPosition}
+      ${sizeStyle}
       background-color: ${getTheme() === 'dark' ? '#1F2937' : '#FFFFFF'};
       color: ${getTheme() === 'dark' ? '#FFFFFF' : '#000000'};
       border-radius: 12px;
