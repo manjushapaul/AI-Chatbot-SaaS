@@ -2,15 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAIService } from '@/lib/ai';
 import { prisma } from '@/lib/db';
 
+// This is a PUBLIC endpoint - no authentication required
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Parse request body
-    const { message, conversationId, botId } = await request.json();
+    const body = await request.json();
+    const { message, conversationId, botId } = body;
+    
+    console.log('[Public Chat API] Received request:', { 
+      hasMessage: !!message, 
+      hasBotId: !!botId, 
+      hasConversationId: !!conversationId,
+      botId: botId?.substring(0, 8) + '...' 
+    });
 
     if (!message || !botId) {
+      console.error('[Public Chat API] Missing required fields:', { hasMessage: !!message, hasBotId: !!botId });
       return NextResponse.json(
         { error: 'Message and botId are required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
@@ -23,6 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get bot and validate it exists and is active
+    console.log('[Public Chat API] Looking up bot:', botId?.substring(0, 8) + '...');
     const bot = await prisma.bots.findFirst({
       where: { 
         id: botId,
@@ -36,11 +57,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (!bot) {
+      console.error('[Public Chat API] Bot not found or inactive:', botId?.substring(0, 8) + '...');
       return NextResponse.json(
         { error: 'Bot not found or inactive' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
+    
+    console.log('[Public Chat API] Bot found:', { botId: bot.id, tenantId: bot.tenants.id, tenantStatus: bot.tenants.status });
 
     // Check if tenant is active
     if (bot.tenants.status !== 'ACTIVE') {
@@ -210,14 +241,24 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Public chat API error:', error);
+    console.error('[Public Chat API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[Public Chat API] Error details:', { message: errorMessage, stack: errorStack });
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
     );
   }
 }
