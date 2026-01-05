@@ -174,9 +174,13 @@
     const position = widgetConfig.position || 'bottom-right';
     const positionStyle = positionStyles[position] || positionStyles['bottom-right'];
     
+    // For 'inline' position, use relative positioning instead of fixed
+    const isInline = position === 'inline';
+    const buttonPosition = isInline ? 'position: relative;' : 'position: fixed;';
+    
     button.style.cssText = `
-      position: fixed;
-      ${positionStyle}
+      ${buttonPosition}
+      ${isInline ? '' : positionStyle}
       width: 64px;
       height: 64px;
       border-radius: 50%;
@@ -210,19 +214,34 @@
     const size = widgetConfig.size || 'medium';
     const sizeStyle = sizeStyles[size] || sizeStyles['medium'];
     
-    // For the widget popup, adjust position to be above the button
+    // For the widget popup, adjust position relative to the button
+    // Bottom positions: show above the button
+    // Top positions: show below the button
+    // Center/Inline: use same position
     let adjustedPosition = positionStyle;
+    const isInline = position === 'inline';
+    
     if (position === 'bottom-right' || position === 'bottom-left') {
-      adjustedPosition = positionStyle.replace('bottom: 16px', 'bottom: 88px'); // 64px button + 16px gap + 8px
+      // Show popup above the button (88px = 64px button + 16px gap + 8px)
+      adjustedPosition = positionStyle.replace('bottom: 16px', 'bottom: 88px');
+    } else if (position === 'top-right' || position === 'top-left') {
+      // Show popup below the button (88px = 64px button + 16px gap + 8px)
+      adjustedPosition = positionStyle.replace('top: 16px', 'top: 88px');
+    } else if (position === 'center') {
+      // Center position - keep as is
+      adjustedPosition = positionStyle;
     }
+    // For inline, position is relative, so no adjustment needed
+    
+    const widgetPosition = isInline ? 'position: relative;' : 'position: fixed;';
     
     widget.style.cssText = `
-      position: fixed;
-      ${adjustedPosition}
+      ${widgetPosition}
+      ${isInline ? '' : adjustedPosition}
       ${sizeStyle}
       background-color: ${getTheme() === 'dark' ? '#1F2937' : '#FFFFFF'};
       color: ${getTheme() === 'dark' ? '#FFFFFF' : '#000000'};
-      border-radius: 12px;
+      border-radius: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
