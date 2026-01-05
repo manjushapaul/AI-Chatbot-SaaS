@@ -28,6 +28,8 @@ import { UseCasesSection } from '@/components/sections/UseCasesSection';
 import { HowItWorksSection } from '@/components/sections/HowItWorksSection';
 import { PricingSection } from '@/components/sections/PricingSection';
 import { HeroWhoWeHelp } from '@/components/landing/HeroWhoWeHelp';
+import ChatWidget from '@/components/landing/ChatWidget';
+
 export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -91,6 +93,9 @@ export default function LandingPage() {
 
     return (
     <div className="min-h-screen bg-gradient-to-b from-[#fff7eb] via-[#ffe9d2] to-[#fff7eb]" style={{ scrollBehavior: 'smooth' }}>
+      {/* Chat Widget - Only appears on landing page */}
+      <ChatWidget />
+      
       {/* Top Strip */}
    
 
