@@ -1,3 +1,20 @@
+/**
+ * AI Chatbot Widget Script
+ * 
+ * This script can be embedded on any website using:
+ * <script src="https://your-domain.com/chat.js" data-widget-id="YOUR_WIDGET_ID"></script>
+ * 
+ * The widget will automatically:
+ * 1. Load widget configuration from the API
+ * 2. Create a floating chat bubble button (bottom-right by default)
+ * 3. Open a chat popup when the button is clicked
+ * 4. Handle user messages and bot responses
+ * 
+ * Works identically whether embedded on:
+ * - Your own landing page (via React component)
+ * - External websites (via script tag)
+ * - Any HTML page
+ */
 (function() {
   'use strict';
 
