@@ -383,9 +383,9 @@
         padding: 8px 16px;
         text-align: center;
         font-size: 12px;
-        color: #6B7280;
-        border-top: 1px solid #E5E7EB;
-        background-color: ${getTheme() === 'dark' ? '#374151' : '#F9FAFB'};
+        color: white;
+        border-top: 1px solid ${widgetConfig.secondaryColor};
+        background-color: ${widgetConfig.secondaryColor};
       `;
       branding.textContent = 'Powered by AI Chatbot';
       widget.appendChild(branding);
@@ -494,8 +494,8 @@
       max-width: 80%;
       padding: 12px;
       border-radius: 12px;
-      background-color: ${getTheme() === 'dark' ? '#E5E7EB' : '#F3F4F6'};
-      color: ${getTheme() === 'dark' ? '#374151' : '#6B7280'};
+      background-color: ${widgetConfig.secondaryColor};
+      color: white;
       font-size: 14px;
     `;
     typingIndicator.innerHTML = `
@@ -538,8 +538,8 @@
           max-width: 80%;
           padding: 12px;
           border-radius: 12px;
-          background-color: ${getTheme() === 'dark' ? '#E5E7EB' : '#F3F4F6'};
-          color: ${getTheme() === 'dark' ? '#374151' : '#6B7280'};
+          background-color: ${widgetConfig.secondaryColor};
+          color: white;
           font-size: 14px;
           line-height: 1.4;
         `;
