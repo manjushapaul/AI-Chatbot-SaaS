@@ -54,6 +54,7 @@
   }
 
   function addStyles() {
+    if (typeof document === 'undefined' || !document) return;
     if (document.getElementById('ai-chatbot-widget-styles')) return;
 
     const styles = `
@@ -131,7 +132,24 @@
     const styleSheet = document.createElement('style');
     styleSheet.id = 'ai-chatbot-widget-styles';
     styleSheet.textContent = styles;
-    document.head.appendChild(styleSheet);
+    
+    if (document.head) {
+      document.head.appendChild(styleSheet);
+    } else {
+      // Fallback: append to body if head is not available
+      if (document.body) {
+        document.body.appendChild(styleSheet);
+      } else {
+        // Wait for head or body to be available
+        setTimeout(() => {
+          if (document.head) {
+            document.head.appendChild(styleSheet);
+          } else if (document.body) {
+            document.body.appendChild(styleSheet);
+          }
+        }, 100);
+      }
+    }
   }
 
   function createFloatingButton() {
@@ -343,8 +361,15 @@
   }
 
   function toggleWidget() {
+    if (!document || !document.body) {
+      console.warn('Document body not available');
+      return;
+    }
+    
     if (widgetElement) {
-      document.body.removeChild(widgetElement);
+      if (document.body.contains(widgetElement)) {
+        document.body.removeChild(widgetElement);
+      }
       widgetElement = null;
     } else {
       widgetElement = createWidget();
@@ -532,8 +557,15 @@
           
           // Create floating button
           const button = createFloatingButton();
-          if (document.body) {
+          if (document && document.body) {
             document.body.appendChild(button);
+          } else {
+            // Wait for body to be available
+            setTimeout(() => {
+              if (document && document.body) {
+                document.body.appendChild(button);
+              }
+            }, 100);
           }
           
           // Auto-open if configured
@@ -554,8 +586,15 @@
         addStyles();
         
         const button = createFloatingButton();
-        if (document.body) {
+        if (document && document.body) {
           document.body.appendChild(button);
+        } else {
+          // Wait for body to be available
+          setTimeout(() => {
+            if (document && document.body) {
+              document.body.appendChild(button);
+            }
+          }, 100);
         }
         
         isInitialized = true;
@@ -564,12 +603,22 @@
 
   // Initialize when DOM is ready
   function safeInitialize() {
-    if (document && document.body) {
+    // Check if document and body exist
+    if (typeof document === 'undefined' || !document) {
+      setTimeout(safeInitialize, 100);
+      return;
+    }
+    
+    if (document.body) {
       initialize();
     } else {
       // Wait for body to be available
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', safeInitialize);
+        if (document.addEventListener) {
+          document.addEventListener('DOMContentLoaded', safeInitialize);
+        } else {
+          setTimeout(safeInitialize, 100);
+        }
       } else {
         // Use a small delay to ensure body exists
         setTimeout(safeInitialize, 100);
@@ -577,22 +626,28 @@
     }
   }
 
-  // Start initialization
-  if (document && document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', safeInitialize);
+  // Start initialization - ensure document exists first
+  if (typeof document !== 'undefined' && document) {
+    if (document.readyState === 'loading' && document.addEventListener) {
+      document.addEventListener('DOMContentLoaded', safeInitialize);
+    } else {
+      safeInitialize();
+    }
   } else {
-    safeInitialize();
+    // If document doesn't exist yet, wait a bit and try again
+    setTimeout(safeInitialize, 100);
   }
 
   // Expose widget API globally
-  window.AIChatbotWidget = {
-    open: toggleWidget,
-    close: () => {
-      if (widgetElement) {
-        document.body.removeChild(widgetElement);
-        widgetElement = null;
-      }
-    },
+  if (typeof window !== 'undefined') {
+    window.AIChatbotWidget = {
+      open: toggleWidget,
+      close: () => {
+        if (widgetElement && document && document.body && document.body.contains(widgetElement)) {
+          document.body.removeChild(widgetElement);
+          widgetElement = null;
+        }
+      },
     sendMessage: (message) => {
       if (widgetElement) {
         const input = widgetElement.querySelector('.ai-chatbot-input');
@@ -602,5 +657,6 @@
         }
       }
     }
-  };
+    };
+  }
 })(); 
